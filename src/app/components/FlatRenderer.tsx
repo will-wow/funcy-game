@@ -100,34 +100,34 @@ function RenderConditionalExpression({
 
   return (
     <div className={`call if flex border-2 border-solid border-blue-300`}>
-      <div className="fr-args flex flex-row items-stretch">
-        <div className="flex fr-arg-list flex-col items-end">
-          <div className="flex flex-row items-center">
+      <Flex flexDirection="row" alignItems="stretch">
+        <Flex flexDirection="column" alignItems="flex-end">
+          <Flex flexDirection="row" alignItems="center">
             <RenderNode node={condition} />
             <div className="fr-pipe flex-grow h-2 w-2 bg-blue-500" />
-          </div>
+          </Flex>
 
-          <div className="flex flex-row items-center">
+          <Flex flexDirection="row" alignItems="center">
             <RenderNode node={whenTrue} />
             <div className="fr-pipe flex-grow h-2 w-2 bg-blue-500" />
-          </div>
+          </Flex>
 
-          <div className="flex flex-row items-center">
+          <Flex flexDirection="row" alignItems="center">
             <RenderNode node={whenFalse} />
             <div className="fr-pipe flex-grow h-2 w-2 bg-blue-500" />
-          </div>
-        </div>
+          </Flex>
+        </Flex>
         <div className="fr-art-pipe-up h-full w-2 bg-blue-500"></div>
-      </div>
+      </Flex>
 
-      <div className="fr-call-func flex flex-col justify-center">
-        <div className="flex flex-row items-center">
+      <Flex flexDirection="column" justifyContent="center">
+        <Flex flexDirection="row" alignItems="center">
           <div className="fr-art-pipe-up h-2 w-2 bg-blue-500"></div>
           <Cube color="#000fff">
             <Text>IF</Text>
           </Cube>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
     </div>
   );
 }
@@ -295,7 +295,7 @@ function isColor(color: string) {
 
 interface BoxProps extends HTMLAttributes<HTMLDivElement> {
   display?: "flex" | "block";
-  alignItems?: "center" | "flex-start" | "flex-end";
+  alignItems?: "center" | "flex-start" | "flex-end" | "stretch";
   justifyContent?: "center" | "flex-start" | "flex-end" | "space-between";
   flexDirection?: "row" | "column";
   flex?: number;
@@ -314,10 +314,12 @@ function Box({
   flexShrink,
   ...props
 }: BoxProps) {
-  const alignClass = alignItems ? `items-${alignItems}` : undefined;
+  const alignClass = alignItems
+    ? `items-${alignItems.replace("flex-", "")}`
+    : undefined;
   const justifyClass = justifyContent ? `justify-${justifyContent}` : undefined;
   const flexDirectionClass = flexDirection
-    ? `flex-${flexDirection}`
+    ? `flex-${flexDirection === "column" ? "col" : "row"}`
     : undefined;
   const flexClass = flex ? `flex-${flex}` : undefined;
   const flexGrowClass = flexGrow ? `flex-grow-${flexGrow}` : undefined;
@@ -347,9 +349,9 @@ function Flex(props: FlexProps) {
 }
 
 interface CubeProps extends Omit<MeshProps, "position" | "rotation"> {
+  rotation?: number;
   x?: number;
   y?: number;
-  rotation?: number;
   color?: string;
   size?: number;
 }
@@ -357,31 +359,18 @@ interface CubeProps extends Omit<MeshProps, "position" | "rotation"> {
 export function Cube({
   color = "#000fff",
   size = 1,
-  x = 0,
-  y = 0,
+  // position = 0,
   rotation,
   children,
 }: CubeProps) {
   return (
     <div
-      className={clxs(
-        `
-				fr-cube
-				absolute
-				transform
-				-translate-x-1/2
-				-translate-y-1/2
-				bg-${color.startsWith("#") ? `[${color}]` : color}
-			`,
-        {
-          [`rotate-${rotation}`]: !!rotation,
-        }
-      )}
+      className="fr-cube"
       style={{
-        left: `${x}px`,
-        top: `${y}px`,
         width: `${size * 100}px`,
         height: `${size * 100}px`,
+        backgroundColor: color,
+        transform: `rotate(${rotation}rad)`,
       }}
     >
       {children}
