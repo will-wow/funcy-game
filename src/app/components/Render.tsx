@@ -9,6 +9,7 @@ import {
   Identifier,
 } from "ts-morph";
 import { Text } from "@react-three/drei";
+import { Flex, Box } from "@react-three/flex";
 // import { SourceContext } from "./SourceContext";
 import { MeshProps, Vector2 } from "@react-three/fiber";
 import { Vector3 as ThreeVector3, Vector2 as ThreeVector2, Euler } from "three";
@@ -48,7 +49,7 @@ export function RenderBody({ node }: RenderProps<Node>) {
 
 function RenderCallExpression({ node }: { node: CallExpression }) {
   const identifier = node.forEachChildAsArray()[0] as Identifier;
-	const args = node.getArguments()
+  const args = node.getArguments();
 
   return <RenderNode node={definition} />;
 }
@@ -116,11 +117,9 @@ export function RenderFunction({ node }: RenderProps<FunctionDeclaration>) {
 
 function RenderNumberType({
   size = 1,
-  position,
+  y = 0,
   ...props
 }: Omit<CubeProps, "color">) {
-  const { x, y } = normalizePosition2(position);
-
   const cubeSize = size / Math.sqrt(2);
 
   return (
@@ -128,39 +127,32 @@ function RenderNumberType({
       {...props}
       size={cubeSize}
       rotation={QUARTER_TURN}
-      position={[x, y + (size - cubeSize) / 2]}
+      y={y + (size - cubeSize) / 2}
       color="#000fff"
     />
   );
 }
 
 interface CubeProps extends Omit<MeshProps, "position" | "rotation"> {
+  x?: number;
+  y?: number;
   rotation?: number;
-  position?: Vector2;
-  color: string;
+  color?: string;
   size?: number;
 }
 
 export function Cube({
   color,
   size = 1,
-  position = 0,
+  x = 0,
+  y = 0,
   rotation,
   children,
 }: CubeProps) {
-  const offset = size / 2;
-
-  const { x, y } = normalizePosition2(position);
-  const normalizedPosition = new ThreeVector3(
-    x + offset,
-    offset,
-    y * -1 - offset
-  );
-
   const normalizedRotation = rotation ? new Euler(0, rotation, 0) : undefined;
 
   return (
-    <mesh position={normalizedPosition} rotation={normalizedRotation}>
+    <mesh position={[x, 0, y]} rotation={normalizedRotation}>
       <boxGeometry args={[size, size, size]} />
       <meshStandardMaterial color={color} />
 

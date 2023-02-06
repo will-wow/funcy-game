@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { HTMLAttributes, ReactNode } from "react";
 import {
   FunctionDeclaration,
   Node,
@@ -15,7 +15,7 @@ import {
   ConditionalExpression,
 } from "ts-morph";
 import { MeshProps, Vector2 } from "@react-three/fiber";
-import { Vector2 as ThreeVector2 } from "three";
+import clxs from "clsx";
 
 const QUARTER_TURN = Math.PI / 4;
 
@@ -54,21 +54,22 @@ interface RenderProps<N extends Node> {
 export function RenderBody({ node }: RenderProps<FunctionDeclaration>) {
   const params = node.getParameters();
   return (
-    <div className="fr-body flex flex-row">
-      <div className="fr-params flex flex-row">
-        <div className="flex flex-col">
+    <Flex className="fr-body" flexDirection="row">
+      <Flex flexDirection="row">
+        <Flex flexDirection="column">
           {params.map((param, i) => {
             return (
-              <div key={i} className="flex flex-row items-center">
+              <Flex key={i} flexDirection="row" alignItems="center">
                 <RenderParameter node={param} />
-                <div className="fr-pipe flex-grow h-2 w-2 bg-blue-500" />
-              </div>
+
+                <Box className="fr-pipe h-2 w-2 bg-blue-500" flexGrow={1} />
+              </Flex>
             );
           })}
-        </div>
+        </Flex>
 
-        <div className="fr-pipe h-full w-2 bg-blue-500" />
-      </div>
+        <Box className="fr-pipe w-2 bg-blue-500" />
+      </Flex>
 
       {node
         .getBody()
@@ -76,7 +77,7 @@ export function RenderBody({ node }: RenderProps<FunctionDeclaration>) {
         .map((node, i) => {
           return <RenderNode key={i} node={node} />;
         })}
-    </div>
+    </Flex>
   );
 }
 
@@ -224,25 +225,20 @@ export function RenderFunction({ node }: RenderProps<FunctionDeclaration>) {
     <>
       {node.getParameters().map((node, i) => {
         return (
-          <Cube
-            key={i}
-            size={0.25}
-            color="#0000ff"
-            position={[0, 0.25 + i * 0.25 * 1.2]}
-          />
+          <Cube key={i} size={0.25} color="#0000ff" y={0.25 + i * 0.25 * 1.2} />
         );
       })}
 
       <>
         {type?.isKind(ts.SyntaxKind.NumberKeyword) && (
-          <RenderNumberType size={0.25} position={[0.25, 0]} />
+          <RenderNumberType size={0.25} x={0.25} />
         )}
         {type?.isKind(ts.SyntaxKind.StringKeyword) && (
-          <Cube size={0.25} position={[0.25, 0.125]} color="#000fff" />
+          <Cube size={0.25} x={0.25} y={0.25} color="#000fff" />
         )}
       </>
 
-      <Cube color="#000fff" size={0.75} position={[0.25, 0.25]}>
+      <Cube color="#000fff" size={0.75} x={0.25} y={0.25}>
         <Text color="white" fontSize={0.25} position={[0, 0.51]}>
           {node.getName() || "FN"}
         </Text>
@@ -253,11 +249,9 @@ export function RenderFunction({ node }: RenderProps<FunctionDeclaration>) {
 
 function RenderNumberType({
   size = 1,
-  position,
+  y = 0,
   ...props
 }: Omit<CubeProps, "color">) {
-  const { x, y } = normalizePosition2(position);
-
   const cubeSize = size / Math.sqrt(2);
 
   return (
@@ -265,51 +259,10 @@ function RenderNumberType({
       {...props}
       size={cubeSize}
       rotation={QUARTER_TURN}
-      position={[x, y + (size - cubeSize) / 2]}
+      y={y + (size - cubeSize) / 2}
       color="#000fff"
     />
   );
-}
-
-interface CubeProps extends Omit<MeshProps, "position" | "rotation"> {
-  rotation?: number;
-  position?: Vector2;
-  color?: string;
-  size?: number;
-}
-
-export function Cube({
-  color = "#000fff",
-  size = 1,
-  // position = 0,
-  rotation,
-  children,
-}: CubeProps) {
-  return (
-    <div
-      className="fr-cube"
-      style={{
-        width: `${size * 100}px`,
-        height: `${size * 100}px`,
-        backgroundColor: color,
-        transform: `rotate(${rotation}rad)`,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function normalizePosition2(position: Vector2 | undefined): ThreeVector2 {
-  if (!position) return new ThreeVector2(0, 0);
-  if (Array.isArray(position)) {
-    const [x, y] = position;
-    return new ThreeVector2(x, y);
-  } else if (typeof position === "number") {
-    return new ThreeVector2(position, position);
-  } else {
-    return position as ThreeVector2;
-  }
 }
 
 interface TextProps {
@@ -338,4 +291,110 @@ function isColor(color: string) {
   if (color === "red") return true;
   if (color === "blue") return true;
   return false;
+}
+
+interface BoxProps extends HTMLAttributes<HTMLDivElement> {
+  display?: "flex" | "block";
+  alignItems?: "center" | "flex-start" | "flex-end";
+  justifyContent?: "center" | "flex-start" | "flex-end" | "space-between";
+  flexDirection?: "row" | "column";
+  flex?: number;
+  flexGrow?: number;
+  flexShrink?: number;
+}
+
+function Box({
+  className,
+  display,
+  alignItems,
+  justifyContent,
+  flexDirection,
+  flex,
+  flexGrow,
+  flexShrink,
+  ...props
+}: BoxProps) {
+  const alignClass = alignItems ? `items-${alignItems}` : undefined;
+  const justifyClass = justifyContent ? `justify-${justifyContent}` : undefined;
+  const flexDirectionClass = flexDirection
+    ? `flex-${flexDirection}`
+    : undefined;
+  const flexClass = flex ? `flex-${flex}` : undefined;
+  const flexGrowClass = flexGrow ? `flex-grow-${flexGrow}` : undefined;
+  const flexShrinkClass = flexShrink ? `flex-shrink-${flexShrink}` : undefined;
+
+  return (
+    <div
+      className={clxs(
+        className,
+        display,
+        alignClass,
+        justifyClass,
+        flexDirectionClass,
+        flexClass,
+        flexGrowClass,
+        flexShrinkClass
+      )}
+      {...props}
+    />
+  );
+}
+
+interface FlexProps extends Omit<BoxProps, "display"> {}
+
+function Flex(props: FlexProps) {
+  return <Box display="flex" {...props} />;
+}
+
+interface CubeProps extends Omit<MeshProps, "position" | "rotation"> {
+  x?: number;
+  y?: number;
+  rotation?: number;
+  color?: string;
+  size?: number;
+}
+
+export function Cube({
+  color = "#000fff",
+  size = 1,
+  x = 0,
+  y = 0,
+  rotation,
+  children,
+}: CubeProps) {
+  return (
+    <div
+      className={clxs(
+        `
+				fr-cube
+				absolute
+				transform
+				-translate-x-1/2
+				-translate-y-1/2
+				bg-${color.startsWith("#") ? `[${color}]` : color}
+			`,
+        {
+          [`rotate-${rotation}`]: !!rotation,
+        }
+      )}
+      style={{
+        left: `${x}px`,
+        top: `${y}px`,
+        width: `${size * 100}px`,
+        height: `${size * 100}px`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+interface GroupProps {
+  children: ReactNode;
+  x?: number;
+  y?: number;
+}
+
+function Group({ children, x = 0, y = 0 }: GroupProps) {
+  return <div className={`absolute top-[${y}] left-[${x}]`}>{children}</div>;
 }
