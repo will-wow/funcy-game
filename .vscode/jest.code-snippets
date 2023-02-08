@@ -1,0 +1,16 @@
+{
+  "Jest Test File": {
+    "scope": "typescriptreact,typescript",
+    "prefix": "test",
+    "body": [
+      "import {} from './$1';",
+      "",
+      "describe('$1', () => {",
+      "  it('should $2', () => {",
+      "    expect(true).toBe(true);",
+      "  });",
+      "});"
+    ],
+    "description": "basic jest test"
+  }
+}

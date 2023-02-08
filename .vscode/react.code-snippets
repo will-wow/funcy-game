@@ -1,0 +1,16 @@
+{
+  "React Component": {
+    "scope": "typescriptreact",
+    "prefix": "comp",
+    "body": [
+      "export interface $1Props {",
+      "  $2: unknown",
+      "}",
+      "",
+      "export function $1({ $2 }: $1Props) {",
+      "  return <div></div>;",
+      "};"
+    ],
+    "description": "react functional component"
+  }
+}

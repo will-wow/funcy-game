@@ -142,17 +142,18 @@ interface CubeProps extends Omit<MeshProps, "position" | "rotation"> {
 }
 
 export function Cube({
-  color,
+  color = "#000fff",
   size = 1,
   x = 0,
   y = 0,
   rotation,
   children,
+  ...props
 }: CubeProps) {
   const normalizedRotation = rotation ? new Euler(0, rotation, 0) : undefined;
 
   return (
-    <mesh position={[x, 0, y]} rotation={normalizedRotation}>
+    <mesh {...props} position={[x, size / 2, y]} rotation={normalizedRotation}>
       <boxGeometry args={[size, size, size]} />
       <meshStandardMaterial color={color} />
 

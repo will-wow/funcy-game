@@ -1,17 +1,9 @@
-import fs from "fs/promises";
-import path from "path";
-import { FlatGame } from "./components/FlatGame";
-// import { Game } from "./components/Game";
+import { GameBoard } from "~/app/components/GameBoard";
 
-export default async function Home() {
-  const sourceFile = await fs.readFile(
-    path.join(process.cwd(), "./example/src/exampleScript.ts"),
-    "utf-8"
-  );
-
+export default async function Game() {
   return (
     <div className="h-screen">
-      <FlatGame sourceFile={sourceFile} />
+      <GameBoard />
     </div>
   );
 }

@@ -9,10 +9,10 @@ import {
   ExpressionStatement,
   Identifier,
   StringLiteral,
-  NumericLiteral,
   ParameterDeclaration,
   ReturnStatement,
   ConditionalExpression,
+  BinaryExpression,
 } from "ts-morph";
 import { MeshProps, Vector2 } from "@react-three/fiber";
 import clxs from "clsx";
@@ -33,13 +33,15 @@ export function RenderNode({ node }: RenderNodeProps) {
   } else if (node.isKind(ts.SyntaxKind.StringLiteral)) {
     return <RenderStringLiteral node={node} />;
   } else if (node.isKind(ts.SyntaxKind.NumericLiteral)) {
-    return <RenderNumericLiteral node={node} />;
+    return <RenderLiteralNode node={node} />;
   } else if (node.isKind(ts.SyntaxKind.Identifier)) {
-    return <RenderIdentifier node={node} />;
+    return <RenderLiteralNode node={node} />;
   } else if (node.isKind(ts.SyntaxKind.ReturnStatement)) {
     return <RenderReturnStatement node={node} />;
   } else if (node.isKind(ts.SyntaxKind.ConditionalExpression)) {
     return <RenderConditionalExpression node={node} />;
+  } else if (node.isKind(ts.SyntaxKind.BinaryExpression)) {
+    return <RenderBinaryExpression node={node} />;
   } else {
     // eslint-disable-next-line no-console
     console.info("unknown node", node);
@@ -88,6 +90,23 @@ function RenderReturnStatement({ node }: RenderProps<ReturnStatement>) {
         return <RenderNode key={i} node={node} />;
       })}
     </>
+  );
+}
+
+function RenderBinaryExpression({ node }: RenderProps<BinaryExpression>) {
+  const left = node.getLeft();
+  const right = node.getRight();
+  const operator = node.getOperatorToken();
+
+  return (
+    <Flex flexDirection="row" alignItems="center">
+      <Flex flexDirection="column" alignItems="center">
+        <RenderNode node={left} />
+        <RenderNode node={right} />
+      </Flex>
+
+      <RenderLiteralNode node={operator} />
+    </Flex>
   );
 }
 
@@ -140,15 +159,7 @@ function RenderParameter({ node }: { node: ParameterDeclaration }) {
   );
 }
 
-function RenderIdentifier({ node }: { node: Identifier }) {
-  return (
-    <Cube>
-      <Text>{node.getText()}</Text>
-    </Cube>
-  );
-}
-
-function RenderNumericLiteral({ node }: { node: NumericLiteral }) {
+function RenderLiteralNode({ node }: RenderProps<Node>) {
   return (
     <Cube>
       <Text>{node.getText()}</Text>

@@ -138,7 +138,7 @@ class Bundle {
 function main(bundle: Bundle): string {
   return bundle.has("steel")
     ? craftSword(bundle.get("steel"), chop(bundle.get("tree")))
-    : bundle.has("tree", 5)
+    : bundle.has("tree", 5 + 1)
     ? craftSword(
         // Metal
         forge(
