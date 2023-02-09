@@ -1,5 +1,6 @@
 import { ts } from "ts-morph";
-import { NodeKind, GameNode } from "./nodes";
+
+import { GameNode, NodeKind } from "./nodes";
 
 export function getEmptyNode(
   kind: NodeKind,

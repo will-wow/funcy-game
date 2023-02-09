@@ -7,8 +7,25 @@ module.exports = {
     "next",
     "prettier",
   ],
+  settings: {
+    "import/internal-regex": "^(\\$|~/).+",
+  },
   rules: {
-    "import/order": ["error"],
+    "import/order": [
+      "error",
+      {
+        groups: [
+          "builtin",
+          "external",
+          "internal",
+          "parent",
+          "sibling",
+          "index",
+        ],
+        alphabetize: { order: "asc" },
+        "newlines-between": "always",
+      },
+    ],
     "import/prefer-default-export": "off",
     "no-plusplus": "off",
     "jsx-a11y/label-has-associated-control": ["error", { assert: "either" }],

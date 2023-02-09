@@ -1,4 +1,5 @@
-import { Environment, Sky, PerspectiveCamera } from "@react-three/drei";
+import { Environment, PerspectiveCamera, Sky } from "@react-three/drei";
+
 import { EULER_NEGATIVE_90_X } from "$three/rotations";
 
 export function Lighting() {

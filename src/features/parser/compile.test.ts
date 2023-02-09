@@ -1,6 +1,6 @@
-import { compileNodes } from "./compile";
-
 import { GameNode } from "$nodes/nodes";
+
+import { compileNodes } from "./compile";
 
 describe("generateSourceCode", () => {
   it("should generate simple source code", async () => {

@@ -1,8 +1,8 @@
 import { Project, ts } from "ts-morph";
 
-import { makeFunction } from "./lib/makeFunction";
-
 import { GameNode } from "$nodes/nodes";
+
+import { makeFunction } from "./lib/makeFunction";
 
 const project = new Project({
   useInMemoryFileSystem: true,

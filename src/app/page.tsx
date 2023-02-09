@@ -1,7 +1,8 @@
 import { Suspense } from "react";
-import { GameBoard } from "$board/GameBoard";
 
-export default async function Game() {
+import { Game } from "$game/Game";
+
+export default async function GamePage() {
   return (
     <Suspense
       fallback={
@@ -10,7 +11,7 @@ export default async function Game() {
         </div>
       }
     >
-      <GameBoard />
+      <Game />
     </Suspense>
   );
 }

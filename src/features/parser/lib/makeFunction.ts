@@ -1,13 +1,14 @@
 /* eslint-disable no-console */
 import { ts } from "ts-morph";
+
 import {
   GameNode,
   NodeId,
-  isCalculatedNode,
-  VariableGameNode,
-  isExpressionNode,
-  ParameterGameNode,
   NullableNodeId,
+  ParameterGameNode,
+  VariableGameNode,
+  isCalculatedNode,
+  isExpressionNode,
 } from "$nodes/nodes";
 import { assert } from "$utils/utils";
 
