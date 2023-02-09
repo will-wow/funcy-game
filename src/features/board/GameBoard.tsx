@@ -7,22 +7,21 @@ import { Center, OrbitControls, Text3D } from "@react-three/drei";
 import { ts } from "ts-morph";
 import clsx from "clsx";
 
+import { setInputOnNode, setOutputOnNode } from "../nodes/input-output";
+import { getEmptyNode } from "../nodes/empty-node";
 import { PlayArea } from "./components/PlayArea";
 import { Lighting } from "./components/Lighting";
 import monogram from "~/assets/monogram.json";
 import {
   GameNode,
-  getEmptyNode,
+  NodeId,
   isCalculatedNode,
   isExpressionNode,
   isVariableNode,
-  NodeId,
   NodeKind,
-  setInputOnNode,
-  setOutputOnNode,
-  compileNodes,
-} from "~/lib/generateSourceCode";
-import { NINETY_DEGREES } from "~/lib/rotations";
+} from "~/features/nodes/nodes";
+import { compileNodes } from "~/features/parser/compile";
+import { NINETY_DEGREES } from "~/features/three/rotations";
 
 const DEFAULT_FUNCTION: Record<string, GameNode> = {
   p1: getEmptyNode("Parameter", { x: -12, y: 0, id: "p1" }),

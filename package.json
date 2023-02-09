@@ -10,7 +10,7 @@
     "test": "jest",
     "format": "npm-run-all -s format:*",
     "format:prettier": "prettier --write \"./**/*.{ts,js,css,html,md,json,yml}\"",
-    "format:eslint": "eslint --fix ."
+    "format:eslint": "eslint --fix src"
   },
   "dependencies": {
     "@next/font": "13.1.6",
