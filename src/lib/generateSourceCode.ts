@@ -106,6 +106,16 @@ export function isCalculatedNode(node: any): node is BaseCalculatedGameNode {
   return "inputs" in node;
 }
 
+/** Throw an error if the condition is not met. */
+export function assert(
+  condition: unknown,
+  message?: string
+): asserts condition {
+  if (!condition) {
+    throw new Error(message || "Assertion failed");
+  }
+}
+
 /*
  * TODO:
  * - Change GameNotes to all use an tuple of inputs to make it easier to count references
@@ -233,9 +243,8 @@ function countReferences(nodes: Record<NodeId, GameNode>): ReferenceCounts {
   Object.values(nodes).forEach((node) => {
     if (!isCalculatedNode(node)) return;
     node.inputs.forEach((input) => {
-      if (!input) {
-        throw new Error("Can't count references with null input");
-      }
+      assert(input, "Can't count references with null input");
+
       if (nodes[input].kind === "Identifier") {
         referenceCounts[input] = (referenceCounts[input] || 0) + 1;
       }
@@ -269,9 +278,7 @@ function parse(nodes: Record<NodeId, GameNode>): ts.Statement[] {
   const returnNode = Object.values(nodes).find(
     (node) => node.kind === "ReturnStatement"
   );
-  if (!returnNode) {
-    throw new Error("No return node found");
-  }
+  assert(returnNode, "No return node found");
   const returnExpression = parseNodeAndOutputs(
     nodes,
     returnNode,
@@ -295,6 +302,9 @@ function parse(nodes: Record<NodeId, GameNode>): ts.Statement[] {
       ? ts.factory.createKeywordTypeNode(typeKind)
       : undefined;
 
+    const [inputId] = node.inputs;
+    assert(inputId, "Variable node has no input");
+
     statements.push(
       ts.factory.createVariableStatement(
         undefined,
@@ -304,7 +314,7 @@ function parse(nodes: Record<NodeId, GameNode>): ts.Statement[] {
               node.name,
               undefined,
               typeKeyword,
-              parseNodeAndInputs(nodes, nodes[node.inputs[0]!], referenceCounts)
+              parseNodeAndInputs(nodes, nodes[inputId], referenceCounts)
             ),
           ],
           ts.NodeFlags.Const
@@ -331,9 +341,7 @@ function parseNodeAndOutputs(
   if (!isExpressionNode(node)) return newTree;
 
   // If there should be an output but it's not connected, that's an error.
-  if (!node.output) {
-    throw new Error(`Node ${node.kind} has no output`);
-  }
+  assert(node.output, `Node ${node.kind} has no output`);
 
   // When you get to the node that outputs to return, stop.
   // This lets the calling function wrap a return statement around the expression.
@@ -365,9 +373,7 @@ function parseBranch(
   /** The parsed current input, which may be used in this branch. */
   possibleInputTree?: ParsedTree
 ) {
-  if (!expectedInputId) {
-    throw new Error(`Missing input ID for branch`);
-  }
+  assert(expectedInputId, "Expected input ID");
 
   if (possibleInputTree && expectedInputId === possibleInputTree.parsedNodeId) {
     return possibleInputTree.expression;
@@ -441,9 +447,7 @@ function parseNodeAndInputs(
     }
     case "ReturnStatement": {
       const [input] = node.inputs;
-      if (!input) {
-        throw new Error(`Return statement has no input`);
-      }
+      assert(input, "Return statement has no input");
       return parseNodeAndInputs(nodes, nodes[input], referenceCounts);
     }
     default: {
