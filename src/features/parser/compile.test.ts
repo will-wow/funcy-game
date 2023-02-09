@@ -1,6 +1,6 @@
 import { compileNodes } from "./compile";
 
-import { GameNode } from "~/features/nodes/nodes";
+import { GameNode } from "$nodes/nodes";
 
 describe("generateSourceCode", () => {
   it("should generate simple source code", async () => {
@@ -23,13 +23,13 @@ describe("generateSourceCode", () => {
       },
     };
 
-    const { generatedCode, diagnostics } = await compileNodes(nodes);
+    const { generatedCode, diagnostics } = await compileNodes("basic", nodes);
 
     expect(diagnostics).toEqual([]);
     expect(generatedCode).toBe(
       [
         // Function
-        "function add1(p1: number): number {",
+        "function basic(p1: number): number {",
         "    return p1;",
         "}",
       ].join("\n")

@@ -84,6 +84,6 @@ module.exports = {
     "no-html-link-for-pages": 0,
 
     // Restrict importing past the entry point of a feature
-    "import/no-internal-modules": ["error", { forbid: ["~/features/*/*/**"] }],
+    "import/no-internal-modules": ["error", { forbid: ["$*/*/**"] }],
   },
 };

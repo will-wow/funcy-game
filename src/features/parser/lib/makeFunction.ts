@@ -8,8 +8,8 @@ import {
   isExpressionNode,
   ParameterGameNode,
   NullableNodeId,
-} from "~/features/nodes/nodes";
-import { assert } from "~/features/utils/utils";
+} from "$nodes/nodes";
+import { assert } from "$utils/utils";
 
 function countReferences(nodes: Record<NodeId, GameNode>): ReferenceCounts {
   const referenceCounts: ReferenceCounts = {};

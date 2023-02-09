@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { GameBoard } from "~/features/board/GameBoard";
+import { GameBoard } from "$board/GameBoard";
 
 export default async function Game() {
   return (

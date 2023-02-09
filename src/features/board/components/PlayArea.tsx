@@ -1,6 +1,6 @@
 import { Center, Cone } from "@react-three/drei";
 import { Vector2 } from "three";
-import { EULER_180_X } from "~/features/three/rotations";
+import { EULER_180_X } from "$three/rotations";
 
 export interface PlayAreaProps {
   onHover: (point: Vector2) => void;
