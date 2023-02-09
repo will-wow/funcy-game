@@ -3,18 +3,12 @@
 import { Fragment, useState } from "react";
 import { MOUSE, Vector2 } from "three";
 import { Canvas, GroupProps } from "@react-three/fiber";
-import {
-  Center,
-  Cone,
-  Environment,
-  OrbitControls,
-  PerspectiveCamera,
-  Sky,
-  Text3D,
-} from "@react-three/drei";
+import { Center, OrbitControls, Text3D } from "@react-three/drei";
 import { ts } from "ts-morph";
 import clsx from "clsx";
 
+import { PlayArea } from "./components/PlayArea";
+import { Lighting } from "./components/Lighting";
 import monogram from "~/assets/monogram.json";
 import {
   GameNode,
@@ -28,8 +22,7 @@ import {
   setOutputOnNode,
   compileNodes,
 } from "~/lib/generateSourceCode";
-
-const NINETY_DEGREES = Math.PI / 2;
+import { NINETY_DEGREES } from "~/lib/rotations";
 
 const DEFAULT_FUNCTION: Record<string, GameNode> = {
   p1: getEmptyNode("Parameter", { x: -12, y: 0, id: "p1" }),
@@ -50,38 +43,27 @@ export function GameBoard() {
   return (
     <div className="h-screen relative">
       <Canvas>
-        <Center bottom>
-          <Cone
-            args={[64, 512]}
-            rotation={[Math.PI, 0, 0]}
-            onPointerMove={(event) => {
-              const x = Math.round(event.point.x);
-              const y = Math.round(event.point.z);
-              setHoverPoint(new Vector2(x, y));
-            }}
-            onClick={(event) => {
-              const x = Math.round(event.point.x);
-              const y = Math.round(event.point.z);
-
-              if (mode === "place" && nodeToPlace) {
-                setNodes((nodes) => {
-                  const newNode = {
-                    ...nodeToPlace,
-                    x,
-                    y,
-                    id: Math.random().toString(),
-                  };
-                  return {
-                    ...nodes,
-                    [newNode.id]: { ...newNode, x, y },
-                  };
-                });
-              }
-            }}
-          >
-            <meshStandardMaterial color="#949a49" />
-          </Cone>
-        </Center>
+        <PlayArea
+          onHover={setHoverPoint}
+          onClick={({ x, y }) => {
+            if (mode === "place" && nodeToPlace) {
+              setNodes((nodes) => {
+                const newNode = {
+                  ...nodeToPlace,
+                  x,
+                  y,
+                  id: Math.random().toString(),
+                };
+                return {
+                  ...nodes,
+                  [newNode.id]: { ...newNode, x, y },
+                };
+              });
+            }
+          }}
+        >
+          <meshStandardMaterial color="#949a49" />
+        </PlayArea>
 
         {mode === "place" && hoverPoint && nodeToPlace && (
           <RenderNode
@@ -181,22 +163,7 @@ export function GameBoard() {
           );
         })}
 
-        <PerspectiveCamera
-          makeDefault
-          position={[0, 15, 0]}
-          rotation={[-NINETY_DEGREES, 0, 0]}
-        />
-
-        <ambientLight intensity={0.1} />
-        <directionalLight position={[0, 500, 500]} />
-
-        <Environment preset="forest" />
-        <Sky
-          distance={450000}
-          sunPosition={[0.5, 1, 0]}
-          inclination={0}
-          azimuth={0.25}
-        />
+        <Lighting />
 
         <OrbitControls
           mouseButtons={{

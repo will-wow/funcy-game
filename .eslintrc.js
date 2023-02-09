@@ -7,8 +7,8 @@ module.exports = {
     "next",
     "prettier",
   ],
-  parser: "@typescript-eslint/parser",
   rules: {
+    "import/order": ["error"],
     "import/prefer-default-export": "off",
     "no-plusplus": "off",
     "jsx-a11y/label-has-associated-control": ["error", { assert: "either" }],
@@ -81,6 +81,9 @@ module.exports = {
     "no-shadow": "off",
 
     // uses app instead of pages
-    "no-html-link-for-pages": "off",
+    "no-html-link-for-pages": 0,
+
+    // Restrict importing past the entry point of a feature
+    "import/no-internal-modules": ["error", { forbid: ["~/features/*/*/**"] }],
   },
 };
