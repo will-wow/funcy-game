@@ -411,41 +411,6 @@ function parseNodeAndInputs(
     case "Identifier": {
       noteReference(node.id, referenceCounts);
       return ts.factory.createIdentifier(node.name);
-      // const { name, input, type } = node;
-
-      // const typeKind = getKeywordType(type);
-      // const typeKeyword =
-      //   type === "infer"
-      //     ? undefined
-      //     : ts.factory.createKeywordTypeNode(typeKind);
-
-      // return ts.factory.createCallExpression(
-      //   ts.factory.createIdentifier("let"),
-      //   undefined,
-      //   [
-      //     // Variable
-      //     parseBranch(nodes, outputId, input, inputTree),
-      //     // Let Binding
-      //     ts.factory.createArrowFunction(
-      //       undefined,
-      //       undefined,
-      //       [
-      //         ts.factory.createParameterDeclaration(
-      //           undefined,
-      //           undefined,
-      //           name,
-      //           undefined,
-      //           typeKeyword,
-      //           undefined
-      //         ),
-      //       ],
-      //       undefined,
-      //       undefined,
-      //       // Body
-      //       ts.factory.createIdentifier(name)
-      //     ),
-      //   ]
-      // );
     }
     case "BinaryExpression": {
       const {
@@ -559,105 +524,28 @@ const project = new Project({
   },
 });
 
-const resultFile = project.createSourceFile("file.ts");
+const sourceFile = project.createSourceFile("file.ts");
 
 const printer = ts.createPrinter();
 
-export async function testPrint(nodes: Record<string, GameNode>) {
+export async function compileNodes(nodes: Record<string, GameNode>) {
   const functionDeclaration = makeFunction("add1", nodes);
 
-  const result = printer.printNode(
+  const generatedCode = printer.printNode(
     ts.EmitHint.Unspecified,
     functionDeclaration,
-    resultFile.compilerNode
+    sourceFile.compilerNode
   );
 
-  resultFile.replaceWithText(result);
+  sourceFile.replaceWithText(generatedCode);
 
-  // project.updateSourceFile("file.ts", result);
+  const diagnostics = project.getPreEmitDiagnostics();
 
-  // const program = project.createProgram();
-
-  // const sourceFile = project.getSourceFileOrThrow("file.ts");
-  // const x = sourceFile.getChildAt(0);
-  // const functionDeclaration = makeFunction("add1");
-  // const sourceFile = project.createSourceFile("file.ts", functionDeclaration);
-  // sourceFile.formatText();
-
-  // const compilerHost: ts.CompilerHost = {
-  //   getSourceFile(fileName) {
-  //     if (fileName === resultFile.fileName) {
-  //       return resultFile;
-  //     }
-  //   },
-  //   fileExists(fileName) {
-  //     return fileName === resultFile.fileName;
-  //   },
-  //   getCurrentDirectory: () => ts.sys.getCurrentDirectory(),
-  //   writeFile() {},
-  //   getDefaultLibFileName() {
-  //     return "lib.d.ts";
-  //   },
-  //   getCanonicalFileName: (fileName) =>
-  //     ts.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase(),
-  //   readFile() {
-  //     return resultFile.text;
-  //   },
-  //   useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
-  //   getNewLine: () => ts.sys.newLine,
-  // };
-
-  // const options = {
-  //   target: ts.ScriptTarget.ESNext,
-  //   lib: ["esnext"],
-  //   strict: true,
-  //   forceConsistentCasingInFileNames: true,
-  //   noEmit: true,
-  //   module: ts.ModuleKind.ESNext,
-  //   moduleResolution: ts.ModuleResolutionKind.NodeJs,
-  // };
-
-  // const program = ts.createProgram(["file.ts"], options, compilerHost);
-
-  // console.log(compilerHost.getDefaultLibFileName(options));
-
-  // const libFile = readFileSync();
-  // this.compilerHost.addFile("lib.d.ts", libFile.toString());
-
-  const diags = project.getPreEmitDiagnostics();
-
-  // const tc = project.getTypeChecker();
-
-  // tc.getTypeOfSymbolAtLocation();
-
-  // diags.forEach((diag) => {
-  //   // console.log('diag', diag.compilerObject);
-  //   // const pos = resultFile.compilerNode.getPositionOfLineAndCharacter(
-  //   //   diag.getLineNumber()!,
-  //   //   diag.getStart()!
-  //   // );
-
-  //   const node = resultFile.getDescendantAtPos(diag.getStart()!) as SyntaxList;
-
-  //   console.log(node.getFullText(), diag.getStart()!);
-
-  //   console.log("node kind", node?.getKindName(), node.getPos());
-  // });
-
-  // sourceFile.forEachChild((node) => {
-  //   console.log("position", node.getStart(sourceFile));
-  // });
-
-  // console.log("text", sourceFile.getText());
-
-  // const typeChecker = program.getTypeChecker();
-  if (diags.length) {
+  if (diagnostics.length) {
     console.error(
-      result,
-      diags.map((diag) => diag.getMessageText())
+      generatedCode,
+      diagnostics.map((diag) => diag.getMessageText())
     );
-  } else {
-    console.log(result);
   }
-  return result;
+  return { generatedCode, diagnostics };
 }

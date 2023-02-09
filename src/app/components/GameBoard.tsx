@@ -1,20 +1,21 @@
 "use client";
 
 import { Fragment, useState } from "react";
+import { MOUSE, Vector2 } from "three";
 import { Canvas, GroupProps } from "@react-three/fiber";
 import {
   Center,
+  Cone,
   Environment,
   OrbitControls,
   PerspectiveCamera,
-  Plane,
   Sky,
   Text3D,
 } from "@react-three/drei";
-import { ts } from "@ts-morph/bootstrap";
+import { ts } from "ts-morph";
 import clsx from "clsx";
-import monogram from "~/assets/monogram.json";
 
+import monogram from "~/assets/monogram.json";
 import {
   GameNode,
   getEmptyNode,
@@ -25,15 +26,14 @@ import {
   NodeKind,
   setInputOnNode,
   setOutputOnNode,
-  testPrint,
+  compileNodes,
 } from "~/lib/generateSourceCode";
-import { MOUSE, Vector2 } from "three";
 
 const NINETY_DEGREES = Math.PI / 2;
 
 const DEFAULT_FUNCTION: Record<string, GameNode> = {
-  p1: getEmptyNode("Parameter", { x: -10, y: 0, id: "p1" }),
-  return: getEmptyNode("ReturnStatement", { x: 10, y: 0, id: "return" }),
+  p1: getEmptyNode("Parameter", { x: -12, y: 0, id: "p1" }),
+  return: getEmptyNode("ReturnStatement", { x: 12, y: 0, id: "return" }),
 };
 
 export function GameBoard() {
@@ -50,36 +50,38 @@ export function GameBoard() {
   return (
     <div className="h-screen relative">
       <Canvas>
-        <Plane
-          args={[100, 100]}
-          rotation={[-NINETY_DEGREES, 0, 0]}
-          onPointerMove={(event) => {
-            const x = Math.round(event.point.x);
-            const y = Math.round(event.point.z);
-            setHoverPoint(new Vector2(x, y));
-          }}
-          onClick={(event) => {
-            const x = Math.round(event.point.x);
-            const y = Math.round(event.point.z);
+        <Center bottom>
+          <Cone
+            args={[64, 512]}
+            rotation={[Math.PI, 0, 0]}
+            onPointerMove={(event) => {
+              const x = Math.round(event.point.x);
+              const y = Math.round(event.point.z);
+              setHoverPoint(new Vector2(x, y));
+            }}
+            onClick={(event) => {
+              const x = Math.round(event.point.x);
+              const y = Math.round(event.point.z);
 
-            if (mode === "place" && nodeToPlace) {
-              setNodes((nodes) => {
-                const newNode = {
-                  ...nodeToPlace,
-                  x,
-                  y,
-                  id: Math.random().toString(),
-                };
-                return {
-                  ...nodes,
-                  [newNode.id]: { ...newNode, x, y },
-                };
-              });
-            }
-          }}
-        >
-          <meshStandardMaterial color="#949a49" />
-        </Plane>
+              if (mode === "place" && nodeToPlace) {
+                setNodes((nodes) => {
+                  const newNode = {
+                    ...nodeToPlace,
+                    x,
+                    y,
+                    id: Math.random().toString(),
+                  };
+                  return {
+                    ...nodes,
+                    [newNode.id]: { ...newNode, x, y },
+                  };
+                });
+              }
+            }}
+          >
+            <meshStandardMaterial color="#949a49" />
+          </Cone>
+        </Center>
 
         {mode === "place" && hoverPoint && nodeToPlace && (
           <RenderNode
@@ -181,7 +183,7 @@ export function GameBoard() {
 
         <PerspectiveCamera
           makeDefault
-          position={[0, 10, 0]}
+          position={[0, 15, 0]}
           rotation={[-NINETY_DEGREES, 0, 0]}
         />
 
@@ -202,6 +204,7 @@ export function GameBoard() {
             RIGHT: MOUSE.ROTATE,
           }}
           maxPolarAngle={NINETY_DEGREES - 0.01}
+          maxDistance={100}
         />
       </Canvas>
 
@@ -219,7 +222,23 @@ export function GameBoard() {
       <div className="flex justify-between absolute bottom-0 left-10 right-10">
         <button onClick={() => setMode("place")}>Place</button>
         <button onClick={() => setMode("connect")}>Connect</button>
-        <button onClick={() => testPrint(nodes)}>Run</button>
+        <button
+          onClick={async () => {
+            const { generatedCode, diagnostics } = await compileNodes(nodes);
+
+            if (diagnostics.length) {
+              console.error(
+                generatedCode,
+                diagnostics.map((d) => d.getMessageText())
+              );
+            } else {
+              // eslint-disable-next-line no-console
+              console.log(generatedCode);
+            }
+          }}
+        >
+          Run
+        </button>
       </div>
     </div>
   );

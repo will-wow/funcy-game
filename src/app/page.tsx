@@ -1,9 +1,16 @@
+import { Suspense } from "react";
 import { GameBoard } from "~/app/components/GameBoard";
 
 export default async function Game() {
   return (
-    <div className="h-screen">
+    <Suspense
+      fallback={
+        <div>
+          <h1 className="text-5xl">Loading...</h1>
+        </div>
+      }
+    >
       <GameBoard />
-    </div>
+    </Suspense>
   );
 }
