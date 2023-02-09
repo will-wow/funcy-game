@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
-import { Canvas, GroupProps, MeshProps } from "@react-three/fiber";
+import { Fragment, useState } from "react";
+import { Canvas, GroupProps } from "@react-three/fiber";
 import {
   Center,
   Environment,
@@ -18,34 +18,22 @@ import monogram from "~/assets/monogram.json";
 import {
   GameNode,
   getEmptyNode,
-  isExpression,
+  isCalculatedNode,
+  isExpressionNode,
+  isVariableNode,
   NodeId,
   NodeKind,
   setInputOnNode,
+  setOutputOnNode,
   testPrint,
 } from "~/lib/generateSourceCode";
-import { MOUSE, Shape, Vector2 } from "three";
+import { MOUSE, Vector2 } from "three";
 
 const NINETY_DEGREES = Math.PI / 2;
 
 const DEFAULT_FUNCTION: Record<string, GameNode> = {
-  p1: {
-    id: "p1",
-    kind: "Parameter",
-    name: "n",
-    type: "NumberKeyword",
-    x: -10,
-    y: 0,
-  },
-  return: {
-    id: "return",
-    kind: "ReturnStatement",
-    input: {
-      id: "3",
-    },
-    x: 10,
-    y: 0,
-  },
+  p1: getEmptyNode("Parameter", { x: -10, y: 0, id: "p1" }),
+  return: getEmptyNode("ReturnStatement", { x: 10, y: 0, id: "return" }),
 };
 
 export function GameBoard() {
@@ -122,6 +110,9 @@ export function GameBoard() {
                 y={node.y}
                 onClick={(event) => {
                   if (mode === "place") {
+                    if (node.kind === "ReturnStatement") {
+                      return;
+                    }
                     setNodes((nodes) => {
                       const { [node.id]: _, ...rest } = nodes;
                       return rest;
@@ -129,22 +120,28 @@ export function GameBoard() {
                     event.stopPropagation();
                   } else if (mode === "connect") {
                     if (selectedNode) {
-                      const outputNode = setInputOnNode(node, selectedNode);
-
-                      if (outputNode) {
-                        setNodes((nodes) => {
-                          return {
-                            ...nodes,
-                            [node.id]: outputNode,
-                            [selectedNode.id]: {
-                              ...selectedNode,
-                              output: {
-                                id: node.id,
-                              },
-                            },
-                          };
-                        });
+                      if (
+                        !(
+                          isCalculatedNode(node) &&
+                          (isExpressionNode(selectedNode) ||
+                            isVariableNode(selectedNode))
+                        )
+                      ) {
+                        return;
                       }
+                      const nodeWithInput = setInputOnNode(node, selectedNode);
+                      const selectedNodeWithOutput = setOutputOnNode(
+                        selectedNode,
+                        node
+                      );
+
+                      setNodes((nodes) => {
+                        return {
+                          ...nodes,
+                          [node.id]: nodeWithInput,
+                          [selectedNode.id]: selectedNodeWithOutput,
+                        };
+                      });
 
                       setSelectedNode(null);
                     } else {
@@ -154,14 +151,29 @@ export function GameBoard() {
                 }}
               />
 
-              {isExpression(node) && node.output && (
+              {isExpressionNode(node) && node.output && (
                 <Connection
                   startX={node.x}
                   startY={node.y}
-                  endX={nodes[node.output.id].x}
-                  endY={nodes[node.output.id].y}
+                  endX={nodes[node.output].x}
+                  endY={nodes[node.output].y}
                   color="#000fff"
                 />
+              )}
+
+              {isVariableNode(node) && (
+                <>
+                  {node.outputs.map((output, i) => (
+                    <Connection
+                      key={`${output}-${i}`}
+                      startX={node.x}
+                      startY={node.y}
+                      endX={nodes[output].x}
+                      endY={nodes[output].y}
+                      color="#000fff"
+                    />
+                  ))}
+                </>
               )}
             </Fragment>
           );
@@ -176,7 +188,7 @@ export function GameBoard() {
         <ambientLight intensity={0.1} />
         <directionalLight position={[0, 500, 500]} />
 
-       <Environment preset="forest" />
+        <Environment preset="forest" />
         <Sky
           distance={450000}
           sunPosition={[0.5, 1, 0]}
@@ -189,8 +201,7 @@ export function GameBoard() {
             MIDDLE: MOUSE.DOLLY,
             RIGHT: MOUSE.ROTATE,
           }}
-					maxPolarAngle={NINETY_DEGREES-0.01}
-
+          maxPolarAngle={NINETY_DEGREES - 0.01}
         />
       </Canvas>
 
@@ -222,12 +233,13 @@ export interface ConnectionProps {
   color: string;
 }
 
-export function Connection(props: ConnectionProps) {
-  const { startX, startY, endX, endY, color } = props;
-  if (startX !== startY && endX !== endY) {
-    return <LConnection {...props} />;
-  }
-
+export function Connection({
+  startX,
+  startY,
+  endX,
+  endY,
+  color,
+}: ConnectionProps) {
   const minX = Math.min(startX, endX);
   const minY = Math.min(startY, endY);
   const maxX = Math.max(startX, endX);
@@ -235,100 +247,21 @@ export function Connection(props: ConnectionProps) {
 
   const xLength = maxX - minX;
   const yLength = maxY - minY;
-
-  if (startX === endX) {
-    return (
-      <mesh position={[minX, 0.25, minY + yLength / 2]}>
-        <boxGeometry args={[0.5, 0.5, yLength]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-    );
-  }
-
-  if (startY === endY) {
-    return (
-      <mesh position={[minX + xLength / 2, 0.25, minY]}>
-        <boxGeometry args={[xLength, 0.5, 0.5]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-    );
-  }
-
-  return null;
-}
-
-interface PlusBlockProps extends MeshProps {
-  x: number;
-  y: number;
-  color?: string;
-}
-
-function PlusBlock({ x, y, color, ...props }: PlusBlockProps) {
-  const shape = useMemo(() => {
-    const shape = new Shape();
-
-    const SHORT_LENGTH = 0.15;
-    const LONG_LENGTH = 0.5;
-
-    shape.moveTo(-SHORT_LENGTH, LONG_LENGTH);
-    shape.lineTo(SHORT_LENGTH, LONG_LENGTH);
-    shape.lineTo(SHORT_LENGTH, SHORT_LENGTH);
-    shape.lineTo(LONG_LENGTH, SHORT_LENGTH);
-    shape.lineTo(LONG_LENGTH, -SHORT_LENGTH);
-    shape.lineTo(SHORT_LENGTH, -SHORT_LENGTH);
-    shape.lineTo(SHORT_LENGTH, -LONG_LENGTH);
-    shape.lineTo(-SHORT_LENGTH, -LONG_LENGTH);
-    shape.lineTo(-SHORT_LENGTH, -SHORT_LENGTH);
-    shape.lineTo(-LONG_LENGTH, -SHORT_LENGTH);
-    shape.lineTo(-LONG_LENGTH, SHORT_LENGTH);
-    shape.lineTo(-SHORT_LENGTH, SHORT_LENGTH);
-    shape.lineTo(-SHORT_LENGTH, LONG_LENGTH);
-
-    return shape;
-  }, []);
-
-  return (
-    <mesh {...props} position={[x, 0, y]} rotation={[-NINETY_DEGREES, 0, 0]}>
-      <extrudeGeometry args={[shape, { bevelEnabled: false, depth: 1 }]} />
-      <meshStandardMaterial color={color} />
-    </mesh>
-  );
-}
-
-function LConnection({ startX, startY, endX, endY, color }: ConnectionProps) {
-  const minX = Math.min(startX, endX);
-  const minY = Math.min(startY, endY);
-  const maxX = Math.max(startX, endX);
-  const maxY = Math.max(startY, endY);
 
   const xDirection = startX < endX ? 1 : -1;
   const yDirection = startY > endY ? 1 : -1;
 
-  const xLength = maxX - minX;
-  const yLength = maxY - minY;
+  const fullLength = Math.sqrt(xLength * xLength + yLength * yLength);
 
-  const shapeL = useMemo(() => {
-    const shapeL = new Shape();
+  const centerX = minX + xLength / 2;
+  const centerY = minY + yLength / 2;
 
-    const endX = xLength * xDirection;
-    const endY = yLength * yDirection;
-    const adjustX = 0.25 * xDirection;
-    const adjustY = 0.25 * yDirection;
-
-    shapeL.moveTo(0, -adjustY);
-    shapeL.lineTo(endX + adjustX, -adjustY);
-    shapeL.lineTo(endX + adjustX, endY);
-    shapeL.lineTo(endX - adjustX, endY);
-    shapeL.lineTo(endX - adjustX, adjustY);
-    shapeL.lineTo(0, adjustY);
-    shapeL.lineTo(0, -adjustY);
-
-    return shapeL;
-  }, [xDirection, yDirection, xLength, yLength]);
+  // Angle in radians to rotate the line
+  const angle = Math.atan2(yLength * yDirection, xLength * xDirection);
 
   return (
-    <mesh position={[startX, 0, startY]} rotation={[-NINETY_DEGREES, 0, 0]}>
-      <extrudeGeometry args={[shapeL, { bevelEnabled: false, depth: 0.5 }]} />
+    <mesh position={[centerX, 0.05, centerY]} rotation={[0, angle, 0]}>
+      <boxGeometry args={[fullLength, 0.1, 0.25]} />
       <meshStandardMaterial color={color} />
     </mesh>
   );
@@ -353,6 +286,12 @@ function NodeSelector({ value, onChange }: NodeSelectorProps) {
         selectedValue={value}
         value="StringLiteral"
         label="String"
+        onChange={onChange}
+      />
+      <NodeSelectorButton
+        selectedValue={value}
+        value="Parameter"
+        label="Parameter"
         onChange={onChange}
       />
       <NodeSelectorButton
@@ -413,6 +352,37 @@ interface NodeOptionsProps {
 
 function NodeOptions({ node, onChange }: NodeOptionsProps) {
   switch (node.kind) {
+    case "Parameter": {
+      return (
+        <>
+          <label>
+            Name
+            <input
+              type="text"
+              value={node.name}
+              onChange={(e) => onChange({ ...node, name: e.target.value })}
+            />
+          </label>
+
+          <label>
+            Type
+            <select
+              value={node.type}
+              onChange={(e) =>
+                onChange({
+                  ...node,
+                  type: e.target.value as "number" | "boolean" | "string",
+                })
+              }
+            >
+              <option value="number">Number</option>
+              <option value="string">String</option>
+              <option value="boolean">Boolean</option>
+            </select>
+          </label>
+        </>
+      );
+    }
     case "NumericLiteral": {
       return (
         <input
@@ -420,6 +390,51 @@ function NodeOptions({ node, onChange }: NodeOptionsProps) {
           value={node.value}
           onChange={(e) => onChange({ ...node, value: Number(e.target.value) })}
         />
+      );
+    }
+    case "StringLiteral": {
+      return (
+        <input
+          type="text"
+          value={node.value}
+          onChange={(e) => onChange({ ...node, value: e.target.value })}
+        />
+      );
+    }
+    case "Identifier": {
+      return (
+        <>
+          <label>
+            Name
+            <input
+              type="text"
+              value={node.name}
+              onChange={(e) => onChange({ ...node, name: e.target.value })}
+            />
+          </label>
+
+          <label>
+            Type
+            <select
+              value={node.type}
+              onChange={(e) =>
+                onChange({
+                  ...node,
+                  type: e.target.value as
+                    | "infer"
+                    | "number"
+                    | "boolean"
+                    | "string",
+                })
+              }
+            >
+              <option value="infer">Infer</option>
+              <option value="number">Number</option>
+              <option value="string">String</option>
+              <option value="boolean">Boolean</option>
+            </select>
+          </label>
+        </>
       );
     }
     case "BinaryExpression": {
@@ -432,12 +447,25 @@ function NodeOptions({ node, onChange }: NodeOptionsProps) {
             });
           }}
         >
-          <option value={ts.SyntaxKind.PlusToken}>+</option>
-          <option value={ts.SyntaxKind.MinusToken}>-</option>
-          <option value={ts.SyntaxKind.AsteriskToken}>*</option>
-          <option value={ts.SyntaxKind.SlashToken}>/</option>
-          <option value={ts.SyntaxKind.GreaterThanToken}>{">"}</option>
-          <option value={ts.SyntaxKind.LessThanToken}>{"<"}</option>
+          {[
+            ts.SyntaxKind.PlusToken,
+            ts.SyntaxKind.MinusToken,
+            ts.SyntaxKind.AsteriskToken,
+            ts.SyntaxKind.SlashToken,
+            ts.SyntaxKind.GreaterThanToken,
+            ts.SyntaxKind.GreaterThanEqualsToken,
+            ts.SyntaxKind.LessThanToken,
+            ts.SyntaxKind.LessThanEqualsToken,
+            ts.SyntaxKind.EqualsEqualsEqualsToken,
+            ts.SyntaxKind.AmpersandAmpersandToken,
+            ts.SyntaxKind.BarBarToken,
+            ts.SyntaxKind.PercentToken,
+            ts.SyntaxKind.AsteriskAsteriskToken,
+          ].map((token) => (
+            <option key={token} value={token}>
+              {ts.tokenToString(token)}
+            </option>
+          ))}
         </select>
       );
     }
@@ -457,7 +485,7 @@ interface RenderNodeProps extends Omit<GroupProps, "position" | "rotation"> {
 function RenderNode({ node, ...props }: RenderNodeProps) {
   switch (node.kind) {
     case "Parameter": {
-      return <TextNode value="()" {...props} />;
+      return <TextNode value={`(${node.name[0]})`} {...props} />;
     }
     case "ReturnStatement": {
       return <TextNode value="|>" {...props} />;
@@ -467,11 +495,17 @@ function RenderNode({ node, ...props }: RenderNodeProps) {
         <TextNode value={ts.tokenToString(node.operator) || "?"} {...props} />
       );
     }
+    case "Identifier": {
+      return <TextNode value={node.name} {...props} />;
+    }
     case "ConditionalExpression": {
       return <TextNode value="IF" {...props} />;
     }
     case "NumericLiteral": {
       return <TextNode value={node.value} {...props} />;
+    }
+    case "StringLiteral": {
+      return <TextNode value={`"${node.value[0]}"`} {...props} />;
     }
     default: {
       return <Cube {...props} />;
@@ -487,7 +521,7 @@ export function TextNode({ value, x, y, color, ...props }: TextNodeProps) {
   return (
     <group position={[x, 0, y]} {...props}>
       <Center top position={[0, 0.5, 0]}>
-        <Text3D font={monogram} height={0.5} size={1} {...props}>
+        <Text3D font={monogram as any} height={0.5} size={1}>
           <meshStandardMaterial color={color} />
           {value}
         </Text3D>

@@ -1,15 +1,12 @@
+/* eslint-disable no-console */
 "use client";
-import { createProject, ts } from "@ts-morph/bootstrap";
-import { BinaryExpression, Project, SyntaxList } from "ts-morph";
+import { Project, ts } from "ts-morph";
 
 export type NodeId = string;
 
 export type NodeKind = keyof typeof ts.SyntaxKind;
 
-interface ReferenceId {
-  id: NodeId;
-  param?: boolean;
-}
+type NullableNodeId = NodeId | null;
 
 interface BaseGameNode {
   id: NodeId;
@@ -18,40 +15,55 @@ interface BaseGameNode {
   y: number;
 }
 
-interface BaseExpressionGameNode extends BaseGameNode {
-  output: ReferenceId;
+/** Variables and parameters, that can have multiple outputs */
+interface BaseVariableGameNode extends BaseGameNode {
+  outputs: NodeId[];
 }
 
-export interface ParameterGameNode extends BaseGameNode {
+/** Expressions with one output */
+interface BaseExpressionGameNode extends BaseGameNode {
+  output: NullableNodeId;
+}
+
+/** Nodes with inputs. The actual node type should be a tuple of NullableNodeIds */
+interface BaseCalculatedGameNode extends BaseGameNode {
+  inputs: NullableNodeId[];
+}
+
+/** A function parameter, with many outputs. */
+export interface ParameterGameNode extends BaseVariableGameNode {
   kind: "Parameter";
   name: string;
-  type: NodeKind;
+  type: "number" | "string" | "boolean";
+}
+
+/** A variable, with one input and many outputs. */
+export interface VariableGameNode extends BaseVariableGameNode {
+  kind: "Identifier";
+  name: string;
+  type: "infer" | "number" | "string" | "boolean";
+  inputs: [NullableNodeId];
+}
+
+/** The return statement, which has no output. */
+export interface ReturnStatementGameNode extends BaseGameNode {
+  kind: "ReturnStatement";
+  inputs: [NullableNodeId];
 }
 
 export interface BinaryExpressionGameNode extends BaseExpressionGameNode {
   kind: "BinaryExpression";
   operator: ts.BinaryOperator;
-  left: ReferenceId;
-  right: ReferenceId;
+  inputs: [left: NullableNodeId, right: NullableNodeId];
 }
 
 export interface ConditionalExpressionGameNode extends BaseExpressionGameNode {
   kind: "ConditionalExpression";
-  condition: ReferenceId;
-  whenTrue: ReferenceId;
-  whenFalse: ReferenceId;
-}
-
-export interface ReturnStatementGameNode extends BaseGameNode {
-  kind: "ReturnStatement";
-  input: ReferenceId;
-}
-
-export interface VariableGameNode extends BaseGameNode {
-  kind: "Identifier";
-  name: string;
-  type: "number" | "string" | "bundle" | "infer";
-  input?: ReferenceId;
+  inputs: [
+    condition: NullableNodeId,
+    whenTrue: NullableNodeId,
+    whenFalse: NullableNodeId
+  ];
 }
 
 export interface NumericLiteralGameNode extends BaseExpressionGameNode {
@@ -68,7 +80,8 @@ export interface CallExpressionGameNode extends BaseExpressionGameNode {
   kind: "CallExpression";
   moduleName?: string;
   functionName: string;
-  params: ReferenceId[];
+  /** params */
+  inputs: NodeId[];
 }
 
 export type GameNode =
@@ -81,13 +94,57 @@ export type GameNode =
   | StringLiteralGameNode
   | VariableGameNode;
 
-export function isExpression(node: any): node is BaseExpressionGameNode {
+export function isExpressionNode(node: any): node is BaseExpressionGameNode {
   return "output" in node;
 }
 
-export function getEmptyNode(kind: NodeKind, x = 0, y = 0): GameNode {
-  const id = Math.random().toString();
+export function isVariableNode(node: any): node is BaseVariableGameNode {
+  return "outputs" in node;
+}
+
+export function isCalculatedNode(node: any): node is BaseCalculatedGameNode {
+  return "inputs" in node;
+}
+
+/*
+ * TODO:
+ * - Change GameNotes to all use an tuple of inputs to make it easier to count references
+ * - Also change the setInputOnNode to use array.push which is simpler
+ * - then calculate reference counts, and decrement as we go.
+ * - then have a while loop that compiles statements for notes with no references.
+ * - when there are no more references, we're done.
+ * - just use String ids for input/output references instead of objects
+ */
+
+export function getEmptyNode(
+  kind: NodeKind,
+  { id = Math.random().toString(), x = 0, y = 0 } = {}
+): GameNode {
   switch (kind) {
+    case "Parameter": {
+      return { kind, id, x, y, name: "p1", type: "number", outputs: [] };
+    }
+    case "Identifier": {
+      return {
+        kind,
+        id,
+        x: 0,
+        y: 0,
+        name: "",
+        type: "number",
+        inputs: [null],
+        outputs: [],
+      };
+    }
+    case "ReturnStatement": {
+      return {
+        kind,
+        id,
+        x,
+        y,
+        inputs: [null],
+      };
+    }
     case "StringLiteral": {
       return {
         kind,
@@ -95,6 +152,7 @@ export function getEmptyNode(kind: NodeKind, x = 0, y = 0): GameNode {
         x,
         y,
         value: "",
+        output: null,
       };
     }
     case "NumericLiteral": {
@@ -104,10 +162,8 @@ export function getEmptyNode(kind: NodeKind, x = 0, y = 0): GameNode {
         x,
         y,
         value: 1,
+        output: null,
       };
-    }
-    case "Identifier": {
-      return { kind, id, x: 0, y: 0, name: "", type: "number" };
     }
     case "BinaryExpression": {
       return {
@@ -116,6 +172,8 @@ export function getEmptyNode(kind: NodeKind, x = 0, y = 0): GameNode {
         x,
         y,
         operator: ts.SyntaxKind.PlusToken,
+        output: null,
+        inputs: [null, null],
       };
     }
     case "ConditionalExpression": {
@@ -124,195 +182,325 @@ export function getEmptyNode(kind: NodeKind, x = 0, y = 0): GameNode {
         id,
         x,
         y,
+        output: null,
+        inputs: [null, null, null],
       };
     }
     default: {
-      throw new Error(`Unknown node kind, ${node.kind}`);
+      throw new Error(`Unknown node kind, ${kind}`);
     }
   }
 }
 
-export function setInputOnNode<T extends GameNode>(
+function immutableTuplePush<T extends any[]>(tuple: T, value: T[number]): T {
+  const result = [...tuple];
+  result.push(value);
+
+  let isNullFound = false;
+
+  return tuple.map((item) => {
+    if (isNullFound) return item;
+    if (item === null) {
+      isNullFound = true;
+      return value;
+    }
+    return item;
+  }) as T;
+}
+
+export function setInputOnNode<T extends BaseCalculatedGameNode>(
   node: T,
   inputNode: GameNode
-): GameNode | null {
-  const reference: ReferenceId = {
-    id: inputNode.id,
-    param: inputNode.kind === "Parameter",
-  };
-
-  switch (node.kind) {
-    case "BinaryExpression": {
-      if (node.left) {
-        return {
-          ...node,
-          right: reference,
-        };
-      } else {
-        return {
-          ...node,
-          left: reference,
-        };
-      }
-    }
-    case "ConditionalExpression": {
-      if (node.whenTrue) {
-        console.log("whenTrue, setting whenFalse");
-        return {
-          ...node,
-          whenFalse: reference,
-        };
-      } else if (node.condition) {
-        console.log("condition, setting whenTrue");
-        return {
-          ...node,
-          whenTrue: reference,
-        };
-      } else {
-        console.log("nothing, setting condition");
-        return {
-          ...node,
-          condition: reference,
-        };
-      }
-    }
-    case "ReturnStatement": {
-      return {
-        ...node,
-        input: reference,
-      };
-    }
-  }
-  return null;
+): T {
+  return { ...node, inputs: immutableTuplePush(node.inputs, inputNode.id) };
 }
 
-// const nodes: Record<NodeId, GameNode> = {
-//   "1": {
-//     id: "1",
-//     kind: "Parameter",
-//     name: "f",
-//     type: "NumberKeyword",
-//     x: 0,
-//     y: 0,
-//   },
-//   "2": {
-//     id: "2",
-//     kind: "NumericLiteral",
-//     value: 1,
-//     x: 0,
-//     y: 0,
-//     output: { id: "3" },
-//   },
-//   "3": {
-//     id: "3",
-//     kind: "BinaryExpression",
-//     operator: ts.SyntaxKind.SlashToken,
-//     left: { id: "1" },
-//     right: { id: "2" },
-//     x: 0,
-//     y: 0,
-//     output: { id: "return" },
-//   },
-//   return: {
-//     id: "4",
-//     kind: "ReturnStatement",
-//     input: {
-//       id: "3",
-//     },
-//     x: 0,
-//     y: 0,
-//   },
-// };
+export function setOutputOnNode<
+  T extends BaseExpressionGameNode | BaseVariableGameNode
+>(node: T, outputNode: GameNode): T {
+  if (isVariableNode(node)) {
+    return {
+      ...node,
+      outputs: [...node.outputs, outputNode.id],
+    };
+  } else {
+    return { ...node, output: outputNode.id };
+  }
+}
 
-// function parseWithReturn(
-//   node: GameNode,
-//   connections: { inputId?: ReferenceId; outputId?: ReferenceId },
-//   tree?: ts.Statement
-// ) {
-//   const newTree = parse(node, connections, tree);
-//   if (connections.outputId?.id === "return") {
-//     return ts.factory.createReturnStatement(newTree);
-//   } else {
-//     return newTree;
-//   }
-// }
+function countReferences(nodes: Record<NodeId, GameNode>): ReferenceCounts {
+  const referenceCounts: ReferenceCounts = {};
+  Object.values(nodes).forEach((node) => {
+    if (!isCalculatedNode(node)) return;
+    node.inputs.forEach((input) => {
+      if (!input) {
+        throw new Error("Can't count references with null input");
+      }
+      if (nodes[input].kind === "Identifier") {
+        referenceCounts[input] = (referenceCounts[input] || 0) + 1;
+      }
+    });
+  });
+  return referenceCounts;
+}
 
-function parseWithOutput(
+function usedReferences(
+  nodes: Record<string, GameNode>,
+  referenceCounts: ReferenceCounts
+) {
+  const usedReferenceId = Object.keys(referenceCounts).find(
+    (id) => referenceCounts[id] === 0
+  );
+  if (!usedReferenceId) {
+    console.error(
+      referenceCounts,
+      Object.keys(referenceCounts).map((id) => nodes[id])
+    );
+    throw new Error("No reference found with 0 references");
+  }
+
+  delete referenceCounts[usedReferenceId];
+
+  return usedReferenceId;
+}
+
+function parse(nodes: Record<NodeId, GameNode>): ts.Statement[] {
+  const referenceCounts = countReferences(nodes);
+  const returnNode = Object.values(nodes).find(
+    (node) => node.kind === "ReturnStatement"
+  );
+  if (!returnNode) {
+    throw new Error("No return node found");
+  }
+  const returnExpression = parseNodeAndOutputs(
+    nodes,
+    returnNode,
+    referenceCounts
+  );
+
+  const statements: ts.Statement[] = [
+    ts.factory.createReturnStatement(returnExpression),
+  ];
+
+  while (true) {
+    if (Object.keys(referenceCounts).length === 0) {
+      break;
+    }
+
+    const usedReferenceId = usedReferences(nodes, referenceCounts);
+    const node = nodes[usedReferenceId] as VariableGameNode;
+
+    const typeKind = getKeywordType(node.type);
+    const typeKeyword = typeKind
+      ? ts.factory.createKeywordTypeNode(typeKind)
+      : undefined;
+
+    statements.push(
+      ts.factory.createVariableStatement(
+        undefined,
+        ts.factory.createVariableDeclarationList(
+          [
+            ts.factory.createVariableDeclaration(
+              node.name,
+              undefined,
+              typeKeyword,
+              parseNodeAndInputs(nodes, nodes[node.inputs[0]!], referenceCounts)
+            ),
+          ],
+          ts.NodeFlags.Const
+        )
+      )
+    );
+  }
+
+  return statements.reverse();
+}
+
+/** Parse a node, and also parse any of its outputs to walk the whole tree. */
+function parseNodeAndOutputs(
   nodes: Record<NodeId, GameNode>,
   node: GameNode,
-  { outputId }: { outputId?: ReferenceId },
-  tree?: ts.Expression
+  referenceCounts: ReferenceCounts,
+  outputId?: NodeId
 ): ts.Expression {
-  const newTree = parse(nodes, node, {}, tree);
+  // Start by parsing the current node.
+  const newTree = parseNodeAndInputs(nodes, node, referenceCounts);
 
-  if (!isExpression(node)) return newTree;
+  // Don't look for an output if there isn't none.
+  // This is the end for returns.
+  if (!isExpressionNode(node)) return newTree;
 
-  if (node.output.id === "return" || node.output.id === outputId?.id) {
+  // If there should be an output but it's not connected, that's an error.
+  if (!node.output) {
+    throw new Error(`Node ${node.kind} has no output`);
+  }
+
+  // When you get to the node that outputs to return, stop.
+  // This lets the calling function wrap a return statement around the expression.
+  if (node.output === "return" || node.output === outputId) {
     return newTree;
   }
 
-  return parse(
-    nodes,
-    nodes[node.output.id],
-    { inputId: { id: node.id } },
-    newTree
-  );
+  // Parse the output node, passing in the current node as the input.
+  return parseNodeAndInputs(nodes, nodes[node.output], referenceCounts, {
+    parsedNodeId: node.id,
+    expression: newTree,
+  });
 }
 
-function parseOrInput(
+/** A parsed expression, with the ID of the node that was parsed. */
+interface ParsedTree {
+  parsedNodeId: NodeId;
+  expression: ts.Expression;
+}
+
+/** Parse a branch, which may have already been parsed. */
+function parseBranch(
   nodes: Record<NodeId, GameNode>,
-  referenceId: ReferenceId,
-  tree: ts.Expression | undefined,
-  inputId: ReferenceId | undefined,
-  node: GameNode
+  /** Output ID of the current node being processed */
+  outputId: NodeId,
+  /** ID of the input node to be parsed. */
+  expectedInputId: NullableNodeId,
+  referenceCounts: ReferenceCounts,
+  /** The parsed current input, which may be used in this branch. */
+  possibleInputTree?: ParsedTree
 ) {
-  if (tree && inputId?.id && inputId.id === node.id) return tree;
+  if (!expectedInputId) {
+    throw new Error(`Missing input ID for branch`);
+  }
 
-  return parseWithOutput(nodes, node, { outputId: referenceId }, tree);
+  if (possibleInputTree && expectedInputId === possibleInputTree.parsedNodeId) {
+    return possibleInputTree.expression;
+  }
+
+  const node = nodes[expectedInputId];
+
+  return parseNodeAndOutputs(nodes, node, referenceCounts, outputId);
 }
 
-function parse(
+type ReferenceCounts = Record<NodeId, number>;
+
+function noteReference(id: string, referenceCounts: ReferenceCounts) {
+  // If the reference is don't, we're parsing the assignment, so ignore it.
+  if (referenceCounts[id]) {
+    // Decrement a used reference
+    referenceCounts[id]--;
+  }
+  return referenceCounts;
+}
+
+/**
+ * Parse a node, and all of its inputs.
+ * Optionally takes an already parsed input
+ */
+function parseNodeAndInputs(
+  /** Table of all nodes */
   nodes: Record<NodeId, GameNode>,
+  /** The current node */
   node: GameNode,
-  { inputId }: { inputId?: ReferenceId },
-  tree?: ts.Expression
+  referenceCounts: ReferenceCounts,
+  /** The tree of the last node parsed */
+  inputTree?: ParsedTree
 ): ts.Expression {
-  const referenceId = { id: node.id, param: node.kind === "Parameter" };
+  /** The ID of this node, to be used as the output to other branches. */
+  const outputId = node.id;
   switch (node.kind) {
     case "Parameter": {
       return ts.factory.createIdentifier(node.name);
     }
+    case "Identifier": {
+      noteReference(node.id, referenceCounts);
+      return ts.factory.createIdentifier(node.name);
+      // const { name, input, type } = node;
+
+      // const typeKind = getKeywordType(type);
+      // const typeKeyword =
+      //   type === "infer"
+      //     ? undefined
+      //     : ts.factory.createKeywordTypeNode(typeKind);
+
+      // return ts.factory.createCallExpression(
+      //   ts.factory.createIdentifier("let"),
+      //   undefined,
+      //   [
+      //     // Variable
+      //     parseBranch(nodes, outputId, input, inputTree),
+      //     // Let Binding
+      //     ts.factory.createArrowFunction(
+      //       undefined,
+      //       undefined,
+      //       [
+      //         ts.factory.createParameterDeclaration(
+      //           undefined,
+      //           undefined,
+      //           name,
+      //           undefined,
+      //           typeKeyword,
+      //           undefined
+      //         ),
+      //       ],
+      //       undefined,
+      //       undefined,
+      //       // Body
+      //       ts.factory.createIdentifier(name)
+      //     ),
+      //   ]
+      // );
+    }
     case "BinaryExpression": {
-      const { left, right, operator } = node;
-      return ts.factory.createBinaryExpression(
-        parseOrInput(nodes, referenceId, tree, inputId, nodes[left.id]),
+      const {
         operator,
-        parseOrInput(nodes, referenceId, tree, inputId, nodes[right.id])
+        inputs: [left, right],
+      } = node;
+      return ts.factory.createBinaryExpression(
+        parseBranch(nodes, outputId, left, referenceCounts, inputTree),
+        operator,
+        parseBranch(nodes, outputId, right, referenceCounts, inputTree)
       );
     }
     case "ConditionalExpression": {
-      const { condition, whenTrue, whenFalse, id } = node;
+      const [condition, whenTrue, whenFalse] = node.inputs;
       return ts.factory.createConditionalExpression(
-        parseOrInput(nodes, referenceId, tree, inputId, nodes[condition.id]),
+        parseBranch(nodes, outputId, condition, referenceCounts, inputTree),
         ts.factory.createToken(ts.SyntaxKind.QuestionToken),
-        parseOrInput(nodes, referenceId, tree, inputId, nodes[whenTrue.id]),
+        parseBranch(nodes, outputId, whenTrue, referenceCounts, inputTree),
         ts.factory.createToken(ts.SyntaxKind.ColonToken),
-        parseOrInput(nodes, referenceId, tree, inputId, nodes[whenFalse.id])
+        parseBranch(nodes, outputId, whenFalse, referenceCounts, inputTree)
       );
     }
     case "NumericLiteral": {
-      console.log("numeric", node);
       return ts.factory.createNumericLiteral(node.value);
     }
     case "StringLiteral": {
       return ts.factory.createStringLiteral(node.value);
     }
     case "ReturnStatement": {
-      return parse(nodes, nodes[node.input.id], {});
+      const [input] = node.inputs;
+      if (!input) {
+        throw new Error(`Return statement has no input`);
+      }
+      return parseNodeAndInputs(nodes, nodes[input], referenceCounts);
     }
     default: {
       throw new Error(`Unknown node kind, ${node.kind}`);
     }
+  }
+}
+
+function getKeywordType(
+  type: "infer" | "string" | "number" | "boolean"
+): ts.KeywordTypeSyntaxKind | null {
+  switch (type) {
+    case "infer":
+      return null;
+    case "string":
+      return ts.SyntaxKind.StringKeyword;
+    case "number":
+      return ts.SyntaxKind.NumberKeyword;
+    case "boolean":
+      return ts.SyntaxKind.BooleanKeyword;
+    default:
+      throw new Error(`Unknown type ${type}`);
   }
 }
 
@@ -334,9 +522,11 @@ function makeFunction(name: string, nodes: Record<string, GameNode>) {
 
   const parameters = Object.values(params).map((param) => {
     const name = ts.factory.createIdentifier(param.name);
-    const type = ts.factory.createKeywordTypeNode(
-      ts.SyntaxKind[param.type] as ts.KeywordTypeSyntaxKind
-    );
+    const typeKind = getKeywordType(param.type);
+    if (!typeKind) {
+      throw new Error(`Unknown type ${param.type} for ${param.name}`);
+    }
+    const type = ts.factory.createKeywordTypeNode(typeKind);
 
     return ts.factory.createParameterDeclaration(
       undefined,
@@ -348,9 +538,7 @@ function makeFunction(name: string, nodes: Record<string, GameNode>) {
     );
   });
 
-  const expression = parseWithOutput(nodes, firstExpression, {});
-
-  const returnStatement = ts.factory.createReturnStatement(expression);
+  const statements = parse(nodes);
 
   return ts.factory.createFunctionDeclaration(
     undefined,
@@ -359,7 +547,7 @@ function makeFunction(name: string, nodes: Record<string, GameNode>) {
     undefined,
     parameters,
     ts.factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
-    ts.factory.createBlock([returnStatement], true)
+    ts.factory.createBlock(statements, true)
   );
 }
 
