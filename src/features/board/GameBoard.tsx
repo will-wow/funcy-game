@@ -1,11 +1,19 @@
 "use client";
 
-import { Dispatch, Fragment, SetStateAction, useState } from "react";
+import { Fragment, useState } from "react";
 import { Vector2 } from "three";
 
 import {
-  GameNode,
-  NodeId,
+  removeNode,
+  setNode,
+  setSelectedNode,
+  updateNodes,
+  useMode,
+  useNodes,
+  useNodeToPlace,
+  useSelectedNode,
+} from "$game/game.store";
+import {
   isCalculatedNode,
   isExpressionNode,
   isVariableNode,
@@ -17,39 +25,23 @@ import { PlayArea } from "./components/PlayArea";
 import { Connection } from "./nodes/Connection";
 import { RenderNode } from "./nodes/RenderNode";
 
-export interface GameBoardProps {
-  nodes: Record<NodeId, GameNode>;
-  onNodes: Dispatch<SetStateAction<Record<NodeId, GameNode>>>;
-  mode: "place" | "connect";
-  nodeToPlace: GameNode | null;
-}
-
-export function GameBoard({
-  mode,
-  nodeToPlace,
-  nodes,
-  onNodes,
-}: GameBoardProps) {
-  const [selectedNode, setSelectedNode] = useState<GameNode | null>(null);
-
+export function GameBoard() {
   const [hoverPoint, setHoverPoint] = useState<Vector2 | null>(null);
+  const mode = useMode();
+  const nodeToPlace = useNodeToPlace();
+  const selectedNode = useSelectedNode();
+  const nodes = useNodes();
 
   return (
     <PlayArea
       onHover={setHoverPoint}
       onClick={({ x, y }) => {
-        if (mode === "place" && nodeToPlace) {
-          onNodes((nodes) => {
-            const newNode = {
-              ...nodeToPlace,
-              x,
-              y,
-              id: Math.random().toString(),
-            };
-            return {
-              ...nodes,
-              [newNode.id]: { ...newNode, x, y },
-            };
+        if (nodeToPlace) {
+          setNode({
+            ...nodeToPlace,
+            x,
+            y,
+            id: Math.random().toString(),
           });
         }
       }}
@@ -88,10 +80,8 @@ export function GameBoard({
                   if (node.kind === "ReturnStatement") {
                     return;
                   }
-                  onNodes((nodes) => {
-                    const { [node.id]: _, ...rest } = nodes;
-                    return rest;
-                  });
+
+                  removeNode(node.id);
                   event.stopPropagation();
                 } else if (mode === "connect") {
                   if (selectedNode) {
@@ -110,17 +100,14 @@ export function GameBoard({
                       node
                     );
 
-                    onNodes((nodes) => {
-                      return {
-                        ...nodes,
-                        [node.id]: nodeWithInput,
-                        [selectedNode.id]: selectedNodeWithOutput,
-                      };
+                    updateNodes({
+                      [node.id]: nodeWithInput,
+                      [selectedNode.id]: selectedNodeWithOutput,
                     });
 
                     setSelectedNode(null);
                   } else {
-                    setSelectedNode(node);
+                    setSelectedNode(node.id);
                   }
                 }
               }}

@@ -4,7 +4,7 @@ import { Vector2 } from "three";
 import { EULER_180_X } from "$three/rotations";
 
 export interface PlayAreaProps {
-  onHover: (point: Vector2) => void;
+  onHover: (updateHover: (lastPoint: Vector2 | null) => Vector2 | null) => void;
   onClick: (point: Vector2) => void;
   children: React.ReactNode;
 }
@@ -20,7 +20,12 @@ export function PlayArea({ onHover, onClick, children }: PlayAreaProps) {
           onPointerMove={(event) => {
             const x = Math.round(event.point.x);
             const y = Math.round(event.point.z);
-            onHover(new Vector2(x, y));
+            onHover((lastPoint) => {
+              if (lastPoint && lastPoint.x === x && lastPoint.y === y) {
+                return lastPoint;
+              }
+              return new Vector2(x, y);
+            });
           }}
           onClick={(event) => {
             const x = Math.round(event.point.x);

@@ -12,7 +12,9 @@ import { compileNodes } from "$parser/compile";
 import { NINETY_DEGREES } from "$three/rotations";
 
 import { Lighting } from "./env/Lighting";
+import { getMode, setMode, setNodeToPlace, useMode } from "./game.store";
 import { NodeSelector } from "./ui/NodeSelector";
+import { Shortcuts } from "./ui/Shortcuts";
 
 const DEFAULT_FUNCTION: Record<string, GameNode> = {
   p1: getEmptyNode("Parameter", { x: -12, y: 0, id: "p1" }),
@@ -22,66 +24,106 @@ const DEFAULT_FUNCTION: Record<string, GameNode> = {
 export function Game() {
   const [nodes, setNodes] =
     useState<Record<NodeId, GameNode>>(DEFAULT_FUNCTION);
-  const [mode, setMode] = useState<"place" | "connect">("place");
-  const [nodeToPlace, setNodeToPlace] = useState<GameNode | null>(null);
+  const mode = useMode();
+  const [selectedNode, setSelectedNode] = useState<GameNode | null>(null);
 
   return (
-    <div className="h-screen relative">
-      <Canvas>
-        <GameBoard
-          mode={mode}
-          nodeToPlace={nodeToPlace}
-          nodes={nodes}
-          onNodes={setNodes}
-        />
+    <Shortcuts
+      onChange={(name, pressed) => {
+        if (!pressed) return;
 
-        <Lighting />
+        if (name === "esc") {
+          if (selectedNode) {
+            setSelectedNode(null);
+          } else {
+            setMode(null);
+          }
+        } else if (name === "place") {
+          setMode("place");
+        } else if (name === "connect") {
+          setMode("connect");
+        } else if (getMode() === "place") {
+          const node = getEmptyNode(name);
+          setNodeToPlace(node);
+        }
+      }}
+    >
+      <div
+        className="h-screen relative"
+        onContextMenu={(e) => {
+          e.preventDefault();
 
-        <OrbitControls
-          mouseButtons={{
-            MIDDLE: MOUSE.DOLLY,
-            RIGHT: MOUSE.ROTATE,
-          }}
-          maxPolarAngle={NINETY_DEGREES - 0.01}
-          maxDistance={100}
-        />
-      </Canvas>
+          if (mode === "connect") {
+            setSelectedNode(null);
+          }
+        }}
+      >
+        <Canvas>
+          <GameBoard />
 
-      <div className="absolute top-0 right-0 flex flex-col">
-        <button
-          className="border border-white"
-          onClick={() => setNodes(DEFAULT_FUNCTION)}
-        >
-          Clear
-        </button>
-        <br />
-        <NodeSelector value={nodeToPlace} onChange={setNodeToPlace} />
-      </div>
+          <Lighting />
 
-      <div className="flex justify-between absolute bottom-0 left-10 right-10">
-        <button onClick={() => setMode("place")}>Place</button>
-        <button onClick={() => setMode("connect")}>Connect</button>
-        <button
-          onClick={async () => {
-            const { generatedCode, diagnostics } = await compileNodes(
-              "f",
-              nodes
-            );
+          <OrbitControls
+            mouseButtons={{
+              MIDDLE: MOUSE.DOLLY,
+              RIGHT: MOUSE.ROTATE,
+            }}
+            maxPolarAngle={NINETY_DEGREES - 0.01}
+            maxDistance={100}
+          />
+        </Canvas>
 
-            if (diagnostics.length) {
-              console.error(
-                generatedCode,
-                diagnostics.map((d) => d.getMessageText())
+        <div className="absolute top-0 right-0 flex flex-col">
+          <button
+            className="border border-white"
+            onClick={() => setNodes(DEFAULT_FUNCTION)}
+          >
+            Clear
+          </button>
+          <br />
+          <NodeSelector />
+        </div>
+
+        <div className="flex justify-between absolute bottom-0 left-10 right-10">
+          <button
+            className={`border border-${
+              mode === "place" ? "blue-700" : "white"
+            }`}
+            onClick={() => setMode("place")}
+          >
+            Place
+          </button>
+          <button
+            className={`border border-${
+              mode === "connect" ? "blue-700" : "white"
+            }`}
+            onClick={() => setMode("connect")}
+          >
+            Connect
+          </button>
+          <button
+            className="border border-white"
+            onClick={async () => {
+              const { generatedCode, diagnostics } = await compileNodes(
+                "f",
+                nodes
               );
-            } else {
-              // eslint-disable-next-line no-console
-              console.log(generatedCode);
-            }
-          }}
-        >
-          Run
-        </button>
+
+              if (diagnostics.length) {
+                console.error(
+                  generatedCode,
+                  diagnostics.map((d) => d.getMessageText())
+                );
+              } else {
+                // eslint-disable-next-line no-console
+                console.log(generatedCode);
+              }
+            }}
+          >
+            Run
+          </button>
+        </div>
       </div>
-    </div>
+    </Shortcuts>
   );
 }

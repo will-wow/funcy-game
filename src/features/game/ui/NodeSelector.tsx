@@ -1,56 +1,47 @@
 import clsx from "clsx";
 import { ts } from "ts-morph";
 
+import { setNodeToPlace, useNodeToPlace } from "$game/game.store";
 import { getEmptyNode } from "$nodes/empty-node";
 import { GameNode, NodeKind } from "$nodes/nodes";
 
-interface NodeSelectorProps {
-  className?: string;
-  value: GameNode | null;
-  onChange: (value: GameNode | null) => void;
-}
+export function NodeSelector() {
+  const value = useNodeToPlace();
 
-export function NodeSelector({ value, onChange }: NodeSelectorProps) {
   return (
     <>
       <NodeSelectorButton
         selectedValue={value}
         value="NumericLiteral"
         label="Number"
-        onChange={onChange}
       />
       <NodeSelectorButton
         selectedValue={value}
         value="StringLiteral"
         label="String"
-        onChange={onChange}
       />
       <NodeSelectorButton
         selectedValue={value}
         value="Parameter"
         label="Parameter"
-        onChange={onChange}
       />
       <NodeSelectorButton
         selectedValue={value}
         value="Identifier"
         label="Variable"
-        onChange={onChange}
       />
       <NodeSelectorButton
         selectedValue={value}
         value="BinaryExpression"
         label="Binary Expression"
-        onChange={onChange}
       />
       <NodeSelectorButton
         selectedValue={value}
         value="ConditionalExpression"
         label="IF"
-        onChange={onChange}
       />
 
-      {value && <NodeOptions node={value} onChange={onChange} />}
+      {value && <NodeOptions node={value} />}
     </>
   );
 }
@@ -59,14 +50,12 @@ interface NodeSelectorButtonProps {
   selectedValue: GameNode | null;
   value: NodeKind;
   label: string;
-  onChange: (value: GameNode | null) => void;
 }
 
 function NodeSelectorButton({
   selectedValue,
   value,
   label,
-  onChange,
 }: NodeSelectorButtonProps) {
   const isSelected = value === selectedValue?.kind;
   return (
@@ -75,7 +64,7 @@ function NodeSelectorButton({
         isSelected ? "border-blue-700" : "border-white",
         "border"
       )}
-      onClick={() => onChange(isSelected ? null : getEmptyNode(value))}
+      onClick={() => setNodeToPlace(isSelected ? null : getEmptyNode(value))}
     >
       {label}
     </button>
@@ -84,10 +73,9 @@ function NodeSelectorButton({
 
 interface NodeOptionsProps {
   node: GameNode;
-  onChange: (value: GameNode) => void;
 }
 
-function NodeOptions({ node, onChange }: NodeOptionsProps) {
+function NodeOptions({ node }: NodeOptionsProps) {
   switch (node.kind) {
     case "Parameter": {
       return (
@@ -97,7 +85,9 @@ function NodeOptions({ node, onChange }: NodeOptionsProps) {
             <input
               type="text"
               value={node.name}
-              onChange={(e) => onChange({ ...node, name: e.target.value })}
+              onChange={(e) =>
+                setNodeToPlace({ ...node, name: e.target.value })
+              }
             />
           </label>
 
@@ -106,7 +96,7 @@ function NodeOptions({ node, onChange }: NodeOptionsProps) {
             <select
               value={node.type}
               onChange={(e) =>
-                onChange({
+                setNodeToPlace({
                   ...node,
                   type: e.target.value as "number" | "boolean" | "string",
                 })
@@ -125,7 +115,9 @@ function NodeOptions({ node, onChange }: NodeOptionsProps) {
         <input
           type="number"
           value={node.value}
-          onChange={(e) => onChange({ ...node, value: Number(e.target.value) })}
+          onChange={(e) =>
+            setNodeToPlace({ ...node, value: Number(e.target.value) })
+          }
         />
       );
     }
@@ -134,7 +126,7 @@ function NodeOptions({ node, onChange }: NodeOptionsProps) {
         <input
           type="text"
           value={node.value}
-          onChange={(e) => onChange({ ...node, value: e.target.value })}
+          onChange={(e) => setNodeToPlace({ ...node, value: e.target.value })}
         />
       );
     }
@@ -146,7 +138,9 @@ function NodeOptions({ node, onChange }: NodeOptionsProps) {
             <input
               type="text"
               value={node.name}
-              onChange={(e) => onChange({ ...node, name: e.target.value })}
+              onChange={(e) =>
+                setNodeToPlace({ ...node, name: e.target.value })
+              }
             />
           </label>
 
@@ -155,7 +149,7 @@ function NodeOptions({ node, onChange }: NodeOptionsProps) {
             <select
               value={node.type}
               onChange={(e) =>
-                onChange({
+                setNodeToPlace({
                   ...node,
                   type: e.target.value as
                     | "infer"
@@ -178,7 +172,7 @@ function NodeOptions({ node, onChange }: NodeOptionsProps) {
       return (
         <select
           onChange={(event) => {
-            onChange({
+            setNodeToPlace({
               ...node,
               operator: Number(event.target.value) as ts.BinaryOperator,
             });
