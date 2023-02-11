@@ -46,8 +46,6 @@ export function GameBoard() {
         }
       }}
     >
-      <meshStandardMaterial color="#949a49" />
-
       {mode === "place" && hoverPoint && nodeToPlace && (
         <RenderNode
           node={nodeToPlace}

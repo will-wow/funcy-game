@@ -12,6 +12,11 @@ export function NodeSelector() {
     <>
       <NodeSelectorButton
         selectedValue={value}
+        value="FunctionDeclaration"
+        label="Function"
+      />
+      <NodeSelectorButton
+        selectedValue={value}
         value="NumericLiteral"
         label="Number"
       />
@@ -77,19 +82,25 @@ interface NodeOptionsProps {
 
 function NodeOptions({ node }: NodeOptionsProps) {
   switch (node.kind) {
+    case "FunctionDeclaration": {
+      return (
+        <>
+          <TextInput
+            label="Name"
+            value={node.name}
+            onChange={(value) => setNodeToPlace({ ...node, name: value })}
+          />
+        </>
+      );
+    }
     case "Parameter": {
       return (
         <>
-          <label>
-            Name
-            <input
-              type="text"
-              value={node.name}
-              onChange={(e) =>
-                setNodeToPlace({ ...node, name: e.target.value })
-              }
-            />
-          </label>
+          <TextInput
+            label="Name"
+            value={node.name}
+            onChange={(value) => setNodeToPlace({ ...node, name: value })}
+          />
 
           <label>
             Type
@@ -112,37 +123,30 @@ function NodeOptions({ node }: NodeOptionsProps) {
     }
     case "NumericLiteral": {
       return (
-        <input
-          type="number"
+        <NumberInput
+          label="Value"
           value={node.value}
-          onChange={(e) =>
-            setNodeToPlace({ ...node, value: Number(e.target.value) })
-          }
+          onChange={(value) => setNodeToPlace({ ...node, value })}
         />
       );
     }
     case "StringLiteral": {
       return (
-        <input
-          type="text"
+        <TextInput
+          label="Value"
           value={node.value}
-          onChange={(e) => setNodeToPlace({ ...node, value: e.target.value })}
+          onChange={(value) => setNodeToPlace({ ...node, value })}
         />
       );
     }
     case "Identifier": {
       return (
         <>
-          <label>
-            Name
-            <input
-              type="text"
-              value={node.name}
-              onChange={(e) =>
-                setNodeToPlace({ ...node, name: e.target.value })
-              }
-            />
-          </label>
+          <TextInput
+            label="Name"
+            value={node.name}
+            onChange={(value) => setNodeToPlace({ ...node, name: value })}
+          />
 
           <label>
             Type
@@ -204,4 +208,40 @@ function NodeOptions({ node }: NodeOptionsProps) {
       return null;
     }
   }
+}
+
+interface TextInputProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}
+function TextInput({ label, value, onChange }: TextInputProps) {
+  return (
+    <label>
+      {label}
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
+
+interface NumberInputProps {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}
+function NumberInput({ label, value, onChange }: NumberInputProps) {
+  return (
+    <label>
+      {label}
+      <input
+        type="text"
+        value={value || ""}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
+    </label>
+  );
 }

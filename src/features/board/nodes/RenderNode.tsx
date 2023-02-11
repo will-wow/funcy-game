@@ -14,7 +14,16 @@ export interface RenderNodeProps
 }
 
 export function RenderNode({ node, ...props }: RenderNodeProps) {
+  const { x, y } = props;
   switch (node.kind) {
+    case "FunctionDeclaration": {
+      return (
+        <mesh position={[x, 0, y]}>
+          <boxGeometry args={[node.width, 0.1, node.height]} />
+          <meshStandardMaterial color="gray" />
+        </mesh>
+      );
+    }
     case "Parameter": {
       return <TextNode value={`(${node.name[0]})`} {...props} />;
     }

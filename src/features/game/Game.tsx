@@ -7,25 +7,27 @@ import { MOUSE } from "three";
 
 import { GameBoard } from "$board/GameBoard";
 import { getEmptyNode } from "$nodes/empty-node";
-import { GameNode, NodeId } from "$nodes/nodes";
+import { GameNode } from "$nodes/nodes";
 import { compileNodes } from "$parser/compile";
 import { NINETY_DEGREES } from "$three/rotations";
 
 import { Lighting } from "./env/Lighting";
-import { getMode, setMode, setNodeToPlace, useMode } from "./game.store";
+import {
+  getMode,
+  resetNodes,
+  setMode,
+  setNodeToPlace,
+  useMode,
+  useNodes,
+} from "./game.store";
 import { NodeSelector } from "./ui/NodeSelector";
 import { Shortcuts } from "./ui/Shortcuts";
 
-const DEFAULT_FUNCTION: Record<string, GameNode> = {
-  p1: getEmptyNode("Parameter", { x: -12, y: 0, id: "p1" }),
-  return: getEmptyNode("ReturnStatement", { x: 12, y: 0, id: "return" }),
-};
-
 export function Game() {
-  const [nodes, setNodes] =
-    useState<Record<NodeId, GameNode>>(DEFAULT_FUNCTION);
   const mode = useMode();
   const [selectedNode, setSelectedNode] = useState<GameNode | null>(null);
+
+  const nodes = useNodes();
 
   return (
     <Shortcuts
@@ -74,10 +76,7 @@ export function Game() {
         </Canvas>
 
         <div className="absolute top-0 right-0 flex flex-col">
-          <button
-            className="border border-white"
-            onClick={() => setNodes(DEFAULT_FUNCTION)}
-          >
+          <button className="border border-white" onClick={resetNodes}>
             Clear
           </button>
           <br />

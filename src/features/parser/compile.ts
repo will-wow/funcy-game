@@ -1,6 +1,6 @@
 import { Project, ts } from "ts-morph";
 
-import { GameNode } from "$nodes/nodes";
+import { GameNode, getNodesInFunction, isFunctionNode } from "$nodes/nodes";
 
 import { makeFunction } from "./lib/makeFunction";
 
@@ -21,13 +21,20 @@ export async function compileNodes(
   functionName: string,
   nodes: Record<string, GameNode>
 ) {
-  const functionDeclaration = makeFunction(functionName, nodes);
+  const functions = Object.values(nodes).filter(isFunctionNode);
 
-  const generatedCode = printer.printNode(
-    ts.EmitHint.Unspecified,
-    functionDeclaration,
-    sourceFile.compilerNode
-  );
+  const generatedCode = functions
+    .map((fn) => {
+      const functionNodes = getNodesInFunction(nodes, fn);
+      const functionDeclaration = makeFunction(fn.name, functionNodes);
+
+      return printer.printNode(
+        ts.EmitHint.Unspecified,
+        functionDeclaration,
+        sourceFile.compilerNode
+      );
+    })
+    .join("\n\n");
 
   sourceFile.replaceWithText(generatedCode);
 

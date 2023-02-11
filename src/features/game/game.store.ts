@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { create } from "zustand";
 
+import { getEmptyNode } from "$nodes/empty-node";
 import { GameNode } from "$nodes/nodes";
 
 interface GameStore {
@@ -10,8 +11,13 @@ interface GameStore {
   selectedNode: string | null;
 }
 
+const DEFAULT_FUNCTION: Record<string, GameNode> = {
+  p1: getEmptyNode("Parameter", { x: -12, y: 0, id: "p1" }),
+  return: getEmptyNode("ReturnStatement", { x: 12, y: 0, id: "return" }),
+};
+
 const useGameStore = create<GameStore>(() => ({
-  nodes: {},
+  nodes: DEFAULT_FUNCTION,
   mode: null,
   nodeToPlace: null,
   selectedNode: null,
@@ -27,8 +33,11 @@ export const getMode = () => {
 
 export const setMode = (mode: GameStore["mode"]) => {
   const update: Partial<GameStore> = { mode };
-  if (!mode) {
+  if (mode !== "place") {
     update.nodeToPlace = null;
+  }
+  if (mode !== "connect") {
+    update.selectedNode = null;
   }
   useGameStore.setState(update);
 };
@@ -43,6 +52,10 @@ export const setNodeToPlace = (node: GameNode | null) => {
 
 export const getNodeToPlace = () => {
   return useGameStore.getState().nodeToPlace;
+};
+
+export const resetNodes = () => {
+  useGameStore.setState({ nodes: DEFAULT_FUNCTION });
 };
 
 export const useSelectedNode = () => {

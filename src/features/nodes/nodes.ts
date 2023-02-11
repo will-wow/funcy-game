@@ -6,26 +6,43 @@ export type NodeKind = keyof typeof ts.SyntaxKind;
 
 export type NullableNodeId = NodeId | null;
 
+export type GameNodes = Record<string, GameNode>;
+
 export interface BaseGameNode {
+  /** Unique ID */
   id: NodeId;
+  /** SyntaxKind */
   kind: NodeKind;
+  /** x position on the game board. */
   x: number;
+  /** y position on the game board */
   y: number;
 }
 
 /** Variables and parameters, that can have multiple outputs */
 export interface BaseVariableGameNode extends BaseGameNode {
+  /** List of nodes this variable is used in. */
   outputs: NodeId[];
 }
 
 /** Expressions with one output */
 export interface BaseExpressionGameNode extends BaseGameNode {
+  /** Output this expression sends data to. */
   output: NullableNodeId;
 }
 
 /** Nodes with inputs. The actual node type should be a tuple of NullableNodeIds */
 export interface BaseCalculatedGameNode extends BaseGameNode {
+  /** Tuple of expressions that feed into this node. */
   inputs: NullableNodeId[];
+}
+
+/** A function parameter, with many outputs. */
+export interface FunctionDeclarationGameNode extends BaseGameNode {
+  kind: "FunctionDeclaration";
+  name: string;
+  width: number;
+  height: number;
 }
 
 /** A function parameter, with many outputs. */
@@ -83,6 +100,7 @@ export interface CallExpressionGameNode extends BaseExpressionGameNode {
 }
 
 export type GameNode =
+  | FunctionDeclarationGameNode
   | BinaryExpressionGameNode
   | CallExpressionGameNode
   | ConditionalExpressionGameNode
@@ -102,4 +120,42 @@ export function isVariableNode(node: any): node is BaseVariableGameNode {
 
 export function isCalculatedNode(node: any): node is BaseCalculatedGameNode {
   return "inputs" in node;
+}
+
+export function isFunctionNode(
+  node: GameNode
+): node is FunctionDeclarationGameNode {
+  return node.kind === "FunctionDeclaration";
+}
+
+export function getNodesInFunction(
+  nodes: GameNodes,
+  fn: FunctionDeclarationGameNode
+): GameNodes {
+  const nodesInFunction: GameNodes = {};
+
+  for (const nodeId in nodes) {
+    const node = nodes[nodeId];
+    if (isNodeInsideFunction(node, fn)) {
+      nodesInFunction[nodeId] = node;
+    }
+  }
+
+  return nodesInFunction;
+}
+
+export function isNodeInsideFunction(
+  node: GameNode,
+  fn: FunctionDeclarationGameNode
+) {
+  if (node.kind === "FunctionDeclaration") return false;
+
+  const { x, y, width, height } = fn;
+
+  return (
+    node.x >= x - width / 2 &&
+    node.x <= x + width / 2 &&
+    node.y >= y - height / 2 &&
+    node.y <= y + height / 2
+  );
 }
