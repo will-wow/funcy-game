@@ -13,6 +13,7 @@ import {
   useNodeToPlace,
   useSelectedNode,
 } from "$game/game.store";
+import { generateNodeId } from "$nodes/empty-node";
 import {
   isCalculatedNode,
   isExpressionNode,
@@ -41,7 +42,7 @@ export function GameBoard() {
             ...nodeToPlace,
             x,
             y,
-            id: Math.random().toString(),
+            id: generateNodeId(),
           });
         }
       }}

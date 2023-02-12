@@ -2,7 +2,8 @@ import { Center, Text3D } from "@react-three/drei";
 import { GroupProps } from "@react-three/fiber";
 import { ts } from "ts-morph";
 
-import { GameNode } from "$nodes/nodes";
+import { useGetNode } from "$game/game.store";
+import { CallExpressionGameNode, GameNode, isFunctionNode } from "$nodes/nodes";
 import monogram from "~/assets/monogram.json";
 
 export interface RenderNodeProps
@@ -23,6 +24,12 @@ export function RenderNode({ node, ...props }: RenderNodeProps) {
           <meshStandardMaterial color="gray" />
         </mesh>
       );
+    }
+    case "CallExpression": {
+      return <RenderCallExpression node={node} {...props} />;
+    }
+    case "PropertyAccessExpression": {
+      return <TextNode value={`(${node.name})`} {...props} />;
     }
     case "Parameter": {
       return <TextNode value={`(${node.name[0]})`} {...props} />;
@@ -92,4 +99,22 @@ function Cube({ color = "#000fff", x = 0, y = 0, ...props }: CubeProps) {
       </mesh>
     </group>
   );
+}
+
+interface RenderCallExpressionProps extends RenderNodeProps {
+  node: CallExpressionGameNode;
+}
+
+function RenderCallExpression({ node, ...props }: RenderCallExpressionProps) {
+  const [functionNodeId] = node.inputs;
+
+  const functionNode = useGetNode(functionNodeId);
+
+  if (!functionNode) return <TextNode value="?" {...props} />;
+
+  if (!isFunctionNode(functionNode)) {
+    throw new Error("Expected function node to be a function declaration.");
+  }
+
+  return <TextNode value={functionNode.name} {...props} />;
 }

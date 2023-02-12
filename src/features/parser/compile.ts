@@ -1,6 +1,6 @@
 import { Project, ts } from "ts-morph";
 
-import { GameNode, getNodesInFunction, isFunctionNode } from "$nodes/nodes";
+import { GameNode, isFunctionNode } from "$nodes/nodes";
 
 import { makeFunction } from "./lib/makeFunction";
 
@@ -25,8 +25,7 @@ export async function compileNodes(
 
   const generatedCode = functions
     .map((fn) => {
-      const functionNodes = getNodesInFunction(nodes, fn);
-      const functionDeclaration = makeFunction(fn.name, functionNodes);
+      const functionDeclaration = makeFunction(fn, nodes);
 
       return printer.printNode(
         ts.EmitHint.Unspecified,

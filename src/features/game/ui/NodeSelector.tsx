@@ -1,9 +1,19 @@
 import clsx from "clsx";
+import { useState } from "react";
 import { ts } from "ts-morph";
 
-import { setNodeToPlace, useNodeToPlace } from "$game/game.store";
+import {
+  setNodeToPlace,
+  useNodesOfType,
+  useNodeToPlace,
+} from "$game/game.store";
 import { getEmptyNode } from "$nodes/empty-node";
-import { GameNode, NodeKind } from "$nodes/nodes";
+import {
+  CallExpressionGameNode,
+  FunctionDeclarationGameNode,
+  GameNode,
+  NodeKind,
+} from "$nodes/nodes";
 
 export function NodeSelector() {
   const value = useNodeToPlace();
@@ -13,7 +23,22 @@ export function NodeSelector() {
       <NodeSelectorButton
         selectedValue={value}
         value="FunctionDeclaration"
-        label="Function"
+        label="New Function"
+      />
+      <NodeSelectorButton
+        selectedValue={value}
+        value="ReturnStatement"
+        label="Return"
+      />
+      <NodeSelectorButton
+        selectedValue={value}
+        value="CallExpression"
+        label="Call Function"
+      />
+      <NodeSelectorButton
+        selectedValue={value}
+        value="PropertyAccessExpression"
+        label="Property"
       />
       <NodeSelectorButton
         selectedValue={value}
@@ -86,14 +111,15 @@ function NodeOptions({ node }: NodeOptionsProps) {
   switch (node.kind) {
     case "FunctionDeclaration": {
       return (
-        <>
-          <TextInput
-            label="Name"
-            value={node.name}
-            onChange={(value) => setNodeToPlace({ ...node, name: value })}
-          />
-        </>
+        <TextInput
+          label="Name"
+          value={node.name}
+          onChange={(value) => setNodeToPlace({ ...node, name: value })}
+        />
       );
+    }
+    case "CallExpression": {
+      return <CallExpressionOptions node={node} />;
     }
     case "Parameter": {
       return (
@@ -139,6 +165,17 @@ function NodeOptions({ node }: NodeOptionsProps) {
           value={node.value}
           onChange={(value) => setNodeToPlace({ ...node, value })}
         />
+      );
+    }
+    case "PropertyAccessExpression": {
+      return (
+        <>
+          <TextInput
+            label="Name"
+            value={node.name}
+            onChange={(value) => setNodeToPlace({ ...node, name: value })}
+          />
+        </>
       );
     }
     case "Identifier": {
@@ -236,14 +273,48 @@ interface NumberInputProps {
   onChange: (value: number) => void;
 }
 function NumberInput({ label, value, onChange }: NumberInputProps) {
+  const [isZero, setIsZero] = useState(false);
+
   return (
     <label>
       {label}
       <input
         type="text"
-        value={value || ""}
-        onChange={(e) => onChange(Number(e.target.value))}
+        value={value || (isZero ? "0" : "")}
+        onChange={(e) => {
+          setIsZero(e.target.value === "0");
+          onChange(Number(e.target.value || 0));
+        }}
       />
+    </label>
+  );
+}
+
+function CallExpressionOptions({ node }: { node: CallExpressionGameNode }) {
+  const functions = useNodesOfType<FunctionDeclarationGameNode>(
+    "FunctionDeclaration"
+  ).filter((fn) => fn.id !== node.id);
+
+  return (
+    <label>
+      Function
+      <select
+        value={node.inputs[0] || ""}
+        onChange={(event) =>
+          setNodeToPlace({
+            ...node,
+            inputs: [event.target.value, ...node.inputs.slice(1)],
+          })
+        }
+      >
+        <option value="">Select a function</option>
+
+        {functions.map((fn) => (
+          <option key={fn.id} value={fn.id}>
+            {fn.name}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }

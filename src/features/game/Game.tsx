@@ -103,6 +103,9 @@ export function Game() {
           <button
             className="border border-white"
             onClick={async () => {
+              // eslint-disable-next-line no-console
+              console.log(nodes);
+
               const { generatedCode, diagnostics } = await compileNodes(
                 "f",
                 nodes

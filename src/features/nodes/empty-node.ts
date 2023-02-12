@@ -2,11 +2,15 @@ import { ts } from "ts-morph";
 
 import { GameNode } from "./nodes";
 
+export function generateNodeId(): string {
+  return crypto.randomUUID();
+}
+
 export function getEmptyNode<T extends GameNode>(
   partial: Partial<T> & Pick<T, "kind">
 ): GameNode {
   const { id: partialId, kind, x = 0, y = 0 } = partial;
-  const id = partialId || crypto.randomUUID();
+  const id = partialId || generateNodeId();
 
   switch (kind) {
     case "FunctionDeclaration": {
@@ -21,12 +25,22 @@ export function getEmptyNode<T extends GameNode>(
         y,
       };
     }
+    case "CallExpression": {
+      return {
+        inputs: [null],
+        output: null,
+        ...partial,
+        kind,
+        id,
+        x,
+        y,
+      };
+    }
     case "Parameter": {
       return {
         name: "p1",
         type: "number",
         outputs: [],
-        function: null,
         ...partial,
         kind,
         id,
@@ -40,7 +54,6 @@ export function getEmptyNode<T extends GameNode>(
         type: "number",
         inputs: [null],
         outputs: [],
-        function: null,
         ...partial,
         kind,
         id,
@@ -51,7 +64,6 @@ export function getEmptyNode<T extends GameNode>(
     case "ReturnStatement": {
       return {
         inputs: [null],
-        function: null,
         ...partial,
         kind,
         id,
@@ -63,7 +75,6 @@ export function getEmptyNode<T extends GameNode>(
       return {
         value: "",
         output: null,
-        function: null,
         ...partial,
         kind,
         id,
@@ -75,7 +86,6 @@ export function getEmptyNode<T extends GameNode>(
       return {
         value: 1,
         output: null,
-        function: null,
         ...partial,
         id,
         kind,
@@ -88,7 +98,6 @@ export function getEmptyNode<T extends GameNode>(
         operator: ts.SyntaxKind.PlusToken,
         output: null,
         inputs: [null, null],
-        function: null,
         ...partial,
         kind,
         id,

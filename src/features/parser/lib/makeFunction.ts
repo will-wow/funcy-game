@@ -9,6 +9,10 @@ import {
   VariableGameNode,
   isCalculatedNode,
   isExpressionNode,
+  getNodesInFunction,
+  FunctionDeclarationGameNode,
+  assertNodeIsKind,
+  GameNodes,
 } from "$nodes/nodes";
 import { assert } from "$utils/utils";
 
@@ -47,9 +51,9 @@ function usedReferences(
   return usedReferenceId;
 }
 
-function parse(nodes: Record<NodeId, GameNode>): ts.Statement[] {
-  const referenceCounts = countReferences(nodes);
-  const returnNode = Object.values(nodes).find(
+function parse(nodesInFunction: GameNodes, nodes: GameNodes): ts.Statement[] {
+  const referenceCounts = countReferences(nodesInFunction);
+  const returnNode = Object.values(nodesInFunction).find(
     (node) => node.kind === "ReturnStatement"
   );
   assert(returnNode, "No return node found");
@@ -192,6 +196,25 @@ function parseNodeAndInputs(
       noteReference(node.id, referenceCounts);
       return ts.factory.createIdentifier(node.name);
     }
+    case "CallExpression": {
+      const [functionNode, ...args] = node.inputs;
+      assert(functionNode, "CallExpression does not point to a function node");
+      const fn = nodes[functionNode] as FunctionDeclarationGameNode;
+      assertNodeIsKind(fn, "FunctionDeclaration");
+      return ts.factory.createCallExpression(
+        ts.factory.createIdentifier(fn.name),
+        undefined,
+        args.map((inputId) => {
+          return parseBranch(
+            nodes,
+            outputId,
+            inputId,
+            referenceCounts,
+            inputTree
+          );
+        })
+      );
+    }
     case "BinaryExpression": {
       const {
         operator,
@@ -248,10 +271,14 @@ function getKeywordType(
 }
 
 /** Generate the AST for a function from nodes */
-export function makeFunction(name: string, nodes: Record<string, GameNode>) {
-  const functionName = ts.factory.createIdentifier(name);
+export function makeFunction(
+  functionNode: FunctionDeclarationGameNode,
+  nodes: Record<string, GameNode>
+) {
+  const functionName = ts.factory.createIdentifier(functionNode.name);
 
-  const nodeList = Object.values(nodes);
+  const nodesInFunction = getNodesInFunction(nodes, functionNode);
+  const nodeList = Object.values(nodesInFunction);
   const params = nodeList.filter(
     (node) => node.kind === "Parameter"
   ) as ParameterGameNode[];
@@ -261,8 +288,6 @@ export function makeFunction(name: string, nodes: Record<string, GameNode>) {
   if (!firstExpression) {
     throw new Error("No first expression");
   }
-
-  console.log(nodes);
 
   const parameters = Object.values(params).map((param) => {
     const name = ts.factory.createIdentifier(param.name);
@@ -282,7 +307,7 @@ export function makeFunction(name: string, nodes: Record<string, GameNode>) {
     );
   });
 
-  const statements = parse(nodes);
+  const statements = parse(nodesInFunction, nodes);
 
   return ts.factory.createFunctionDeclaration(
     undefined,
@@ -290,7 +315,8 @@ export function makeFunction(name: string, nodes: Record<string, GameNode>) {
     functionName,
     undefined,
     parameters,
-    ts.factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
+    // ts.factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
+    undefined,
     ts.factory.createBlock(statements, true)
   );
 }

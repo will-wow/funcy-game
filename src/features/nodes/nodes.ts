@@ -60,6 +60,13 @@ export interface VariableGameNode extends BaseVariableGameNode {
   inputs: [NullableNodeId];
 }
 
+export interface PropertyAccessExpressionGameNode
+  extends BaseExpressionGameNode {
+  kind: "PropertyAccessExpression";
+  name: string;
+  inputs: [NullableNodeId];
+}
+
 /** The return statement, which has no output. */
 export interface ReturnStatementGameNode extends BaseGameNode {
   kind: "ReturnStatement";
@@ -93,9 +100,8 @@ export interface StringLiteralGameNode extends BaseExpressionGameNode {
 
 export interface CallExpressionGameNode extends BaseExpressionGameNode {
   kind: "CallExpression";
-  functionNode: NullableNodeId;
   /** params */
-  inputs: NodeId[];
+  inputs: [reference: NullableNodeId, ...args: NullableNodeId[]];
 }
 
 export type GameNode =
@@ -105,6 +111,7 @@ export type GameNode =
   | ConditionalExpressionGameNode
   | NumericLiteralGameNode
   | ParameterGameNode
+  | PropertyAccessExpressionGameNode
   | ReturnStatementGameNode
   | StringLiteralGameNode
   | VariableGameNode;
@@ -121,6 +128,10 @@ export function isVariableNode(node: any): node is BaseVariableGameNode {
 
 export function isCalculatedNode(node: any): node is BaseCalculatedGameNode {
   return "inputs" in node;
+}
+
+export function isCallNode(node: any): node is CallExpressionGameNode {
+  return node.kind === "CallExpression";
 }
 
 export function isFunctionNode(
@@ -159,4 +170,15 @@ export function isNodeInsideFunction(
     node.y >= y - height / 2 &&
     node.y <= y + height / 2
   );
+}
+
+export function assertNodeIsKind<T extends GameNode>(
+  node: T,
+  kind: T["kind"]
+): asserts node is T {
+  if (node.kind !== kind) {
+    throw new Error(
+      `Expected node to be of kind ${kind}, but it was ${node.kind}`
+    );
+  }
 }

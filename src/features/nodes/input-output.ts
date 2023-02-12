@@ -3,6 +3,7 @@ import {
   BaseExpressionGameNode,
   BaseVariableGameNode,
   GameNode,
+  isCallNode,
   isVariableNode,
 } from "./nodes";
 
@@ -26,7 +27,10 @@ export function setInputOnNode<T extends BaseCalculatedGameNode>(
   node: T,
   inputNode: GameNode
 ): T {
-  return { ...node, inputs: immutableTuplePush(node.inputs, inputNode.id) };
+  const inputs = isCallNode(node)
+    ? node.inputs.push(inputNode.id)
+    : immutableTuplePush(node.inputs, inputNode.id);
+  return { ...node, inputs };
 }
 
 export function setOutputOnNode<
