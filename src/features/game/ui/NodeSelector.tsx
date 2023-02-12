@@ -69,7 +69,9 @@ function NodeSelectorButton({
         isSelected ? "border-blue-700" : "border-white",
         "border"
       )}
-      onClick={() => setNodeToPlace(isSelected ? null : getEmptyNode(value))}
+      onClick={() =>
+        setNodeToPlace(isSelected ? null : getEmptyNode({ kind: value }))
+      }
     >
       {label}
     </button>

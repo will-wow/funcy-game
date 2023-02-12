@@ -2,7 +2,7 @@ import { ts } from "ts-morph";
 
 export type NodeId = string;
 
-export type NodeKind = keyof typeof ts.SyntaxKind;
+export type SyntaxKindName = keyof typeof ts.SyntaxKind;
 
 export type NullableNodeId = NodeId | null;
 
@@ -12,7 +12,7 @@ export interface BaseGameNode {
   /** Unique ID */
   id: NodeId;
   /** SyntaxKind */
-  kind: NodeKind;
+  kind: SyntaxKindName;
   /** x position on the game board. */
   x: number;
   /** y position on the game board */
@@ -93,8 +93,7 @@ export interface StringLiteralGameNode extends BaseExpressionGameNode {
 
 export interface CallExpressionGameNode extends BaseExpressionGameNode {
   kind: "CallExpression";
-  moduleName?: string;
-  functionName: string;
+  functionNode: NullableNodeId;
   /** params */
   inputs: NodeId[];
 }
@@ -109,6 +108,8 @@ export type GameNode =
   | ReturnStatementGameNode
   | StringLiteralGameNode
   | VariableGameNode;
+
+export type NodeKind = GameNode["kind"];
 
 export function isExpressionNode(node: any): node is BaseExpressionGameNode {
   return "output" in node;

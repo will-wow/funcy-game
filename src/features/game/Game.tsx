@@ -45,7 +45,7 @@ export function Game() {
         } else if (name === "connect") {
           setMode("connect");
         } else if (getMode() === "place") {
-          const node = getEmptyNode(name);
+          const node = getEmptyNode({ kind: name });
           setNodeToPlace(node);
         }
       }}

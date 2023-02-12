@@ -1,101 +1,109 @@
 import { ts } from "ts-morph";
 
-import { GameNode, NodeKind } from "./nodes";
+import { GameNode } from "./nodes";
 
-export function getEmptyNode(
-  kind: NodeKind,
-  { id = Math.random().toString(), x = 0, y = 0 } = {}
+export function getEmptyNode<T extends GameNode>(
+  partial: Partial<T> & Pick<T, "kind">
 ): GameNode {
+  const { id: partialId, kind, x = 0, y = 0 } = partial;
+  const id = partialId || crypto.randomUUID();
+
   switch (kind) {
     case "FunctionDeclaration": {
       return {
+        name: "f1",
+        width: 16,
+        height: 8,
+        ...partial,
         kind,
         id,
         x,
         y,
-        name: "f1",
-        width: 16,
-        height: 8,
       };
     }
     case "Parameter": {
       return {
-        kind,
-        id,
-        x,
-        y,
         name: "p1",
         type: "number",
         outputs: [],
         function: null,
-      };
-    }
-    case "Identifier": {
-      return {
+        ...partial,
         kind,
         id,
         x,
         y,
+      };
+    }
+    case "Identifier": {
+      return {
         name: "",
         type: "number",
         inputs: [null],
         outputs: [],
         function: null,
+        ...partial,
+        kind,
+        id,
+        x,
+        y,
       };
     }
     case "ReturnStatement": {
       return {
+        inputs: [null],
+        function: null,
+        ...partial,
         kind,
         id,
         x,
         y,
-        inputs: [null],
-        function: null,
       };
     }
     case "StringLiteral": {
       return {
+        value: "",
+        output: null,
+        function: null,
+        ...partial,
         kind,
         id,
         x,
         y,
-        value: "",
-        output: null,
-        function: null,
       };
     }
     case "NumericLiteral": {
       return {
-        kind,
-        id,
-        x,
-        y,
         value: 1,
         output: null,
         function: null,
+        ...partial,
+        id,
+        kind,
+        x,
+        y,
       };
     }
     case "BinaryExpression": {
       return {
-        kind,
-        id,
-        x,
-        y,
         operator: ts.SyntaxKind.PlusToken,
         output: null,
         inputs: [null, null],
         function: null,
-      };
-    }
-    case "ConditionalExpression": {
-      return {
+        ...partial,
         kind,
         id,
         x,
         y,
+      };
+    }
+    case "ConditionalExpression": {
+      return {
         output: null,
         inputs: [null, null, null],
-        function: null,
+        kind,
+        id,
+        x,
+        y,
       };
     }
     default: {

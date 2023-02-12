@@ -12,8 +12,28 @@ interface GameStore {
 }
 
 const DEFAULT_FUNCTION: Record<string, GameNode> = {
-  p1: getEmptyNode("Parameter", { x: -12, y: 0, id: "p1" }),
-  return: getEmptyNode("ReturnStatement", { x: 12, y: 0, id: "return" }),
+  f1: getEmptyNode({
+    kind: "FunctionDeclaration",
+    x: 0,
+    y: 0,
+    width: 26,
+    name: "f1",
+    id: "f1",
+  }),
+  p1: getEmptyNode({
+    kind: "Parameter",
+    x: -12,
+    y: 0,
+    id: "p1",
+    outputs: ["return"],
+  }),
+  return: getEmptyNode({
+    kind: "ReturnStatement",
+    x: 12,
+    y: 0,
+    id: "return",
+    inputs: ["p1"],
+  }),
 };
 
 const useGameStore = create<GameStore>(() => ({
