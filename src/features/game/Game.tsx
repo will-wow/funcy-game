@@ -2,32 +2,31 @@
 
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useState } from "react";
 import { MOUSE } from "three";
 
 import { GameBoard } from "$board/GameBoard";
 import { getEmptyNode } from "$nodes/empty-node";
-import { GameNode } from "$nodes/nodes";
-import { compileNodes } from "$parser/compile";
 import { NINETY_DEGREES } from "$three/rotations";
 
 import { Lighting } from "./env/Lighting";
 import {
   getMode,
+  getSelectedNode,
   resetNodes,
   setMode,
   setNodeToPlace,
+  setSelectedNode,
+  useFocusPoint,
   useMode,
-  useNodes,
 } from "./game.store";
+import { EditSelectedNode } from "./ui/EditNode";
+import { ModeSelector } from "./ui/ModeSelector";
 import { NodeSelector } from "./ui/NodeSelector";
 import { Shortcuts } from "./ui/Shortcuts";
 
 export function Game() {
   const mode = useMode();
-  const [selectedNode, setSelectedNode] = useState<GameNode | null>(null);
-
-  const nodes = useNodes();
+  const focusPoint = useFocusPoint();
 
   return (
     <Shortcuts
@@ -35,10 +34,10 @@ export function Game() {
         if (!pressed) return;
 
         if (name === "esc") {
-          if (selectedNode) {
+          if (getSelectedNode()) {
             setSelectedNode(null);
           } else {
-            setMode(null);
+            setMode("select");
           }
         } else if (name === "place") {
           setMode("place");
@@ -66,6 +65,7 @@ export function Game() {
           <Lighting />
 
           <OrbitControls
+            target={focusPoint}
             mouseButtons={{
               MIDDLE: MOUSE.DOLLY,
               RIGHT: MOUSE.ROTATE,
@@ -83,48 +83,9 @@ export function Game() {
           <NodeSelector />
         </div>
 
-        <div className="flex justify-between absolute bottom-0 left-10 right-10">
-          <button
-            className={`border border-${
-              mode === "place" ? "blue-700" : "white"
-            }`}
-            onClick={() => setMode("place")}
-          >
-            Place
-          </button>
-          <button
-            className={`border border-${
-              mode === "connect" ? "blue-700" : "white"
-            }`}
-            onClick={() => setMode("connect")}
-          >
-            Connect
-          </button>
-          <button
-            className="border border-white"
-            onClick={async () => {
-              // eslint-disable-next-line no-console
-              console.log(nodes);
+        <EditSelectedNode className="absolute top-0 left-0" />
 
-              const { generatedCode, diagnostics } = await compileNodes(
-                "f",
-                nodes
-              );
-
-              if (diagnostics.length) {
-                console.error(
-                  generatedCode,
-                  diagnostics.map((d) => d.getMessageText())
-                );
-              } else {
-                // eslint-disable-next-line no-console
-                console.log(generatedCode);
-              }
-            }}
-          >
-            Run
-          </button>
-        </div>
+        <ModeSelector className="absolute bottom-0 left-0" />
       </div>
     </Shortcuts>
   );

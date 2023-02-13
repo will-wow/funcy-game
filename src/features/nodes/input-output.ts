@@ -28,7 +28,7 @@ export function setInputOnNode<T extends BaseCalculatedGameNode>(
   inputNode: GameNode
 ): T {
   const inputs = isCallNode(node)
-    ? node.inputs.push(inputNode.id)
+    ? [...node.inputs, inputNode.id]
     : immutableTuplePush(node.inputs, inputNode.id);
   return { ...node, inputs };
 }

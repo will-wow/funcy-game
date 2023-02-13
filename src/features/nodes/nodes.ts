@@ -50,6 +50,7 @@ export interface ParameterGameNode extends BaseVariableGameNode {
   kind: "Parameter";
   name: string;
   type: "number" | "string" | "boolean";
+  array: boolean;
 }
 
 /** A variable, with one input and many outputs. */
@@ -57,19 +58,19 @@ export interface VariableGameNode extends BaseVariableGameNode {
   kind: "VariableStatement";
   name: string;
   type: "infer" | "number" | "string" | "boolean";
+  array: boolean;
   inputs: [NullableNodeId];
+}
+
+export interface ElementAccessExpressionGameNode
+  extends BaseExpressionGameNode {
+  kind: "ElementAccessExpression";
+  inputs: [object: NullableNodeId, key: NullableNodeId];
 }
 
 /** A reference to an external function/value */
 export interface IdentifierGameNode extends BaseExpressionGameNode {
   kind: "Identifier";
-  inputs: [NullableNodeId];
-}
-
-export interface PropertyAccessExpressionGameNode
-  extends BaseExpressionGameNode {
-  kind: "PropertyAccessExpression";
-  name: string;
   inputs: [NullableNodeId];
 }
 
@@ -107,7 +108,7 @@ export interface StringLiteralGameNode extends BaseExpressionGameNode {
 export interface CallExpressionGameNode extends BaseExpressionGameNode {
   kind: "CallExpression";
   /** params */
-  inputs: [reference: NullableNodeId, ...args: NullableNodeId[]];
+  inputs: NullableNodeId[];
 }
 
 export type GameNode =
@@ -117,10 +118,11 @@ export type GameNode =
   | ConditionalExpressionGameNode
   | NumericLiteralGameNode
   | ParameterGameNode
-  | PropertyAccessExpressionGameNode
+  | ElementAccessExpressionGameNode
   | ReturnStatementGameNode
   | StringLiteralGameNode
   | VariableGameNode
+  | ElementAccessExpressionGameNode
   | IdentifierGameNode;
 
 export type NodeKind = GameNode["kind"];
@@ -181,11 +183,11 @@ export function isNodeInsideFunction(
 
 export function assertNodeIsKind<T extends GameNode>(
   node: T,
-  kind: T["kind"]
+  kind: T["kind"][]
 ): asserts node is T {
-  if (node.kind !== kind) {
+  if (!kind.includes(node.kind)) {
     throw new Error(
-      `Expected node to be of kind ${kind}, but it was ${node.kind}`
+      `Expected node to be of kind ${kind.join(", ")}, but it was ${node.kind}`
     );
   }
 }

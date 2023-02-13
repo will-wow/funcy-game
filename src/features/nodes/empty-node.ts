@@ -27,7 +27,7 @@ export function getEmptyNode<T extends GameNode>(
     }
     case "CallExpression": {
       return {
-        inputs: [null],
+        inputs: [],
         output: null,
         ...partial,
         kind,
@@ -51,6 +51,7 @@ export function getEmptyNode<T extends GameNode>(
       return {
         name: "p1",
         type: "number",
+        array: false,
         outputs: [],
         ...partial,
         kind,
@@ -63,8 +64,20 @@ export function getEmptyNode<T extends GameNode>(
       return {
         name: "",
         type: "number",
+        array: false,
         inputs: [null],
         outputs: [],
+        ...partial,
+        kind,
+        id,
+        x,
+        y,
+      };
+    }
+    case "ElementAccessExpression": {
+      return {
+        inputs: [null, null],
+        output: null,
         ...partial,
         kind,
         id,

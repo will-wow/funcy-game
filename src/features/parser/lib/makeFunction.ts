@@ -196,15 +196,32 @@ function parseNodeAndInputs(
       noteReference(node.id, referenceCounts);
       return ts.factory.createIdentifier(node.name);
     }
+    case "ElementAccessExpression": {
+      const [object, property] = node.inputs;
+      return ts.factory.createElementAccessExpression(
+        parseBranch(nodes, outputId, object, referenceCounts, inputTree),
+        parseBranch(nodes, outputId, property, referenceCounts, inputTree)
+      );
+    }
+    case "Identifier": {
+      const [nodeId] = node.inputs;
+      assert(nodeId, "Identifier does not have an input");
+      const inputNode = nodes[nodeId] as FunctionDeclarationGameNode;
+      assertNodeIsKind(inputNode, ["FunctionDeclaration"]);
+      return ts.factory.createIdentifier(inputNode.name);
+    }
     case "CallExpression": {
       const [functionNodeId, ...args] = node.inputs;
       assert(functionNodeId, "CallExpression does not have a function");
 
-      const fn = nodes[functionNodeId] as FunctionDeclarationGameNode;
-      assertNodeIsKind(fn, "FunctionDeclaration");
-
       return ts.factory.createCallExpression(
-        ts.factory.createIdentifier(fn.name),
+        parseBranch(
+          nodes,
+          outputId,
+          functionNodeId,
+          referenceCounts,
+          inputTree
+        ),
         undefined,
         args.map((inputId) => {
           return parseBranch(
@@ -297,7 +314,10 @@ export function makeFunction(
     if (!typeKind) {
       throw new Error(`Unknown type ${param.type} for ${param.name}`);
     }
-    const type = ts.factory.createKeywordTypeNode(typeKind);
+    const baseType = ts.factory.createKeywordTypeNode(typeKind);
+    const type = param.array
+      ? ts.factory.createArrayTypeNode(baseType)
+      : baseType;
 
     return ts.factory.createParameterDeclaration(
       undefined,

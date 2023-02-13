@@ -23,7 +23,7 @@ export function Shortcuts({ children, onChange }: ShortcutsProps) {
     <KeyboardControls
       map={keyboardMap}
       onChange={(name, pressed, state) => {
-        if (onChange) {
+        if (onChange && document.activeElement?.tagName !== "INPUT") {
           onChange(
             name as ShortcutControls,
             pressed,
@@ -31,7 +31,6 @@ export function Shortcuts({ children, onChange }: ShortcutsProps) {
           );
         }
       }}
-
     >
       {children}
     </KeyboardControls>

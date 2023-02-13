@@ -1,4 +1,4 @@
-import { Center, Text3D } from "@react-three/drei";
+import { BBAnchor, Center, Text3D } from "@react-three/drei";
 import { GroupProps } from "@react-three/fiber";
 import { ts } from "ts-morph";
 
@@ -15,14 +15,27 @@ export interface RenderNodeProps
 }
 
 export function RenderNode({ node, ...props }: RenderNodeProps) {
-  const { x, y } = props;
+  const { x, y, color } = props;
   switch (node.kind) {
     case "FunctionDeclaration": {
       return (
-        <mesh position={[x, 0, y]}>
-          <boxGeometry args={[node.width, 0.1, node.height]} />
-          <meshStandardMaterial color="gray" />
-        </mesh>
+        <group {...props} position={[x, 0, y]}>
+          <mesh>
+            <boxGeometry args={[node.width, 0.1, node.height]} />
+            <meshStandardMaterial
+              color={color === "#000fff" ? "gray" : color}
+            />
+          </mesh>
+
+          <BBAnchor anchor={[-1, 0, -1]}>
+            <Center top right position={[0, 0.5, 0]}>
+              <Text3D font={monogram as any} height={0.5} size={1}>
+                <meshStandardMaterial color={color} />
+                {node.name || ""}
+              </Text3D>
+            </Center>
+          </BBAnchor>
+        </group>
       );
     }
     case "CallExpression": {
@@ -31,8 +44,8 @@ export function RenderNode({ node, ...props }: RenderNodeProps) {
     case "Identifier": {
       return <RenderIdentifier node={node} {...props} />;
     }
-    case "PropertyAccessExpression": {
-      return <TextNode value={`(${node.name})`} {...props} />;
+    case "ElementAccessExpression": {
+      return <TextNode value="[]" {...props} />;
     }
     case "Parameter": {
       return <TextNode value={`(${node.name[0]})`} {...props} />;
@@ -55,7 +68,7 @@ export function RenderNode({ node, ...props }: RenderNodeProps) {
       return <TextNode value={node.value} {...props} />;
     }
     case "StringLiteral": {
-      return <TextNode value={`"${node.value[0]}"`} {...props} />;
+      return <TextNode value={`"${node.value[0] || ""}"`} {...props} />;
     }
     default: {
       return <Cube {...props} />;
@@ -73,7 +86,7 @@ function TextNode({ value, x, y, color, ...props }: TextNodeProps) {
       <Center top position={[0, 0.5, 0]}>
         <Text3D font={monogram as any} height={0.5} size={1}>
           <meshStandardMaterial color={color} />
-          {value}
+          {value || ""}
         </Text3D>
       </Center>
 
