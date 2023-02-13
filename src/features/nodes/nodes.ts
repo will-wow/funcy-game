@@ -54,9 +54,15 @@ export interface ParameterGameNode extends BaseVariableGameNode {
 
 /** A variable, with one input and many outputs. */
 export interface VariableGameNode extends BaseVariableGameNode {
-  kind: "Identifier";
+  kind: "VariableStatement";
   name: string;
   type: "infer" | "number" | "string" | "boolean";
+  inputs: [NullableNodeId];
+}
+
+/** A reference to an external function/value */
+export interface IdentifierGameNode extends BaseExpressionGameNode {
+  kind: "Identifier";
   inputs: [NullableNodeId];
 }
 
@@ -114,7 +120,8 @@ export type GameNode =
   | PropertyAccessExpressionGameNode
   | ReturnStatementGameNode
   | StringLiteralGameNode
-  | VariableGameNode;
+  | VariableGameNode
+  | IdentifierGameNode;
 
 export type NodeKind = GameNode["kind"];
 

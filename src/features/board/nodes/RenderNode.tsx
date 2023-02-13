@@ -3,7 +3,7 @@ import { GroupProps } from "@react-three/fiber";
 import { ts } from "ts-morph";
 
 import { useGetNode } from "$game/game.store";
-import { CallExpressionGameNode, GameNode, isFunctionNode } from "$nodes/nodes";
+import { GameNode, IdentifierGameNode, isFunctionNode } from "$nodes/nodes";
 import monogram from "~/assets/monogram.json";
 
 export interface RenderNodeProps
@@ -26,7 +26,10 @@ export function RenderNode({ node, ...props }: RenderNodeProps) {
       );
     }
     case "CallExpression": {
-      return <RenderCallExpression node={node} {...props} />;
+      return <TextNode value="()" {...props} />;
+    }
+    case "Identifier": {
+      return <RenderIdentifier node={node} {...props} />;
     }
     case "PropertyAccessExpression": {
       return <TextNode value={`(${node.name})`} {...props} />;
@@ -42,7 +45,7 @@ export function RenderNode({ node, ...props }: RenderNodeProps) {
         <TextNode value={ts.tokenToString(node.operator) || "?"} {...props} />
       );
     }
-    case "Identifier": {
+    case "VariableStatement": {
       return <TextNode value={node.name} {...props} />;
     }
     case "ConditionalExpression": {
@@ -101,11 +104,11 @@ function Cube({ color = "#000fff", x = 0, y = 0, ...props }: CubeProps) {
   );
 }
 
-interface RenderCallExpressionProps extends RenderNodeProps {
-  node: CallExpressionGameNode;
+interface RenderIdentifierProps extends RenderNodeProps {
+  node: IdentifierGameNode;
 }
 
-function RenderCallExpression({ node, ...props }: RenderCallExpressionProps) {
+function RenderIdentifier({ node, ...props }: RenderIdentifierProps) {
   const [functionNodeId] = node.inputs;
 
   const functionNode = useGetNode(functionNodeId);

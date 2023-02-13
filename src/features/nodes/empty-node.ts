@@ -36,6 +36,17 @@ export function getEmptyNode<T extends GameNode>(
         y,
       };
     }
+    case "Identifier": {
+      return {
+        inputs: [null],
+        output: null,
+        ...partial,
+        kind,
+        id,
+        x,
+        y,
+      };
+    }
     case "Parameter": {
       return {
         name: "p1",
@@ -48,7 +59,7 @@ export function getEmptyNode<T extends GameNode>(
         y,
       };
     }
-    case "Identifier": {
+    case "VariableStatement": {
       return {
         name: "",
         type: "number",

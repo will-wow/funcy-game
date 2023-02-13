@@ -23,7 +23,7 @@ function countReferences(nodes: Record<NodeId, GameNode>): ReferenceCounts {
     node.inputs.forEach((input) => {
       assert(input, "Can't count references with null input");
 
-      if (nodes[input].kind === "Identifier") {
+      if (nodes[input]?.kind === "VariableStatement") {
         referenceCounts[input] = (referenceCounts[input] || 0) + 1;
       }
     });
@@ -192,15 +192,17 @@ function parseNodeAndInputs(
     case "Parameter": {
       return ts.factory.createIdentifier(node.name);
     }
-    case "Identifier": {
+    case "VariableStatement": {
       noteReference(node.id, referenceCounts);
       return ts.factory.createIdentifier(node.name);
     }
     case "CallExpression": {
-      const [functionNode, ...args] = node.inputs;
-      assert(functionNode, "CallExpression does not point to a function node");
-      const fn = nodes[functionNode] as FunctionDeclarationGameNode;
+      const [functionNodeId, ...args] = node.inputs;
+      assert(functionNodeId, "CallExpression does not have a function");
+
+      const fn = nodes[functionNodeId] as FunctionDeclarationGameNode;
       assertNodeIsKind(fn, "FunctionDeclaration");
+
       return ts.factory.createCallExpression(
         ts.factory.createIdentifier(fn.name),
         undefined,

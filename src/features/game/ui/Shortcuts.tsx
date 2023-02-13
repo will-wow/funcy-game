@@ -42,7 +42,7 @@ export enum ShortcutControls {
   esc = "esc",
   place = "place",
   connect = "connect",
-  variable = "Identifier",
+  variable = "VariableStatement",
   number = "NumericLiteral",
   string = "StringLiteral",
   parameter = "Parameter",

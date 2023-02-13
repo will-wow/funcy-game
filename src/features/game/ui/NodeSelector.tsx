@@ -12,7 +12,9 @@ import {
   CallExpressionGameNode,
   FunctionDeclarationGameNode,
   GameNode,
+  IdentifierGameNode,
   NodeKind,
+  NullableNodeId,
 } from "$nodes/nodes";
 
 export function NodeSelector() {
@@ -57,7 +59,7 @@ export function NodeSelector() {
       />
       <NodeSelectorButton
         selectedValue={value}
-        value="Identifier"
+        value="VariableStatement"
         label="Variable"
       />
       <NodeSelectorButton
@@ -119,7 +121,32 @@ function NodeOptions({ node }: NodeOptionsProps) {
       );
     }
     case "CallExpression": {
-      return <CallExpressionOptions node={node} />;
+      return (
+        <FunctionReferenceOptions
+          node={node}
+          label="Function"
+          onChange={(inputId) => {
+            setNodeToPlace({
+              ...node,
+              inputs: [inputId, ...node.inputs.slice(1)],
+            });
+          }}
+        />
+      );
+    }
+    case "Identifier": {
+      return (
+        <FunctionReferenceOptions
+          node={node}
+          label="Reference"
+          onChange={(inputId) => {
+            setNodeToPlace({
+              ...node,
+              inputs: [inputId],
+            });
+          }}
+        />
+      );
     }
     case "Parameter": {
       return (
@@ -178,7 +205,7 @@ function NodeOptions({ node }: NodeOptionsProps) {
         </>
       );
     }
-    case "Identifier": {
+    case "VariableStatement": {
       return (
         <>
           <TextInput
@@ -290,22 +317,27 @@ function NumberInput({ label, value, onChange }: NumberInputProps) {
   );
 }
 
-function CallExpressionOptions({ node }: { node: CallExpressionGameNode }) {
+interface FunctionReferenceOptionsProps<
+  T extends CallExpressionGameNode | IdentifierGameNode
+> {
+  label: string;
+  node: T;
+  onChange: (node: NullableNodeId) => void;
+}
+
+function FunctionReferenceOptions<
+  T extends CallExpressionGameNode | IdentifierGameNode
+>({ node, label, onChange }: FunctionReferenceOptionsProps<T>) {
   const functions = useNodesOfType<FunctionDeclarationGameNode>(
     "FunctionDeclaration"
   ).filter((fn) => fn.id !== node.id);
 
   return (
     <label>
-      Function
+      {label}
       <select
         value={node.inputs[0] || ""}
-        onChange={(event) =>
-          setNodeToPlace({
-            ...node,
-            inputs: [event.target.value, ...node.inputs.slice(1)],
-          })
-        }
+        onChange={(event) => onChange(event.target.value)}
       >
         <option value="">Select a function</option>
 

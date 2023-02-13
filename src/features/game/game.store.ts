@@ -122,8 +122,16 @@ const DEFAULT_FUNCTION: Record<string, GameNode> = {
     x: -2,
     y: 10,
   },
+  "absRef": {
+    inputs: ["f1"],
+    output: "4c9b477a-6558-42b5-99d1-b65bc2e695f6",
+    kind: "Identifier",
+    id: "absRef",
+    x: -11,
+    y: 10,
+  },
   "4c9b477a-6558-42b5-99d1-b65bc2e695f6": {
-    inputs: ["f1", "dd18aa02-c607-46b1-9418-95634525e767"],
+    inputs: ["absRef", "dd18aa02-c607-46b1-9418-95634525e767"],
     output: "aeb896d9-607f-4360-b3d6-224e0f5e2162",
     kind: "CallExpression",
     id: "4c9b477a-6558-42b5-99d1-b65bc2e695f6",
