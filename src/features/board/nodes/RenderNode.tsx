@@ -1,4 +1,4 @@
-import { BBAnchor, Center, Text3D } from "@react-three/drei";
+import { BBAnchor, Center, Edges, Text3D } from "@react-three/drei";
 import { GroupProps } from "@react-three/fiber";
 import { ts } from "ts-morph";
 
@@ -24,17 +24,31 @@ export function RenderNode(props: RenderNodeProps) {
   const { x, y, color, node } = props;
   switch (node.kind) {
     case "FunctionDeclaration": {
+      const fnColor = color === "#000fff" ? solarized.yellow : solarized.base0;
       return (
         <group {...props} position={[x, 0, y]}>
-          <mesh receiveShadow>
-            <boxGeometry args={[node.width, 0.1, node.height]} />
-            <meshStandardMaterial
-              color={color === "#000fff" ? solarized.yellow : solarized.base0}
-            />
+          <mesh position={[0, 0, node.height / 2 - 0.05]}>
+            <boxGeometry args={[node.width, 0.2, 0.1]} />
+            <meshStandardMaterial color={fnColor} />
+          </mesh>
+
+          <mesh position={[0, 0, -(node.height / 2 - 0.05)]}>
+            <boxGeometry args={[node.width, 0.2, 0.1]} />
+            <meshStandardMaterial color={fnColor} />
+          </mesh>
+
+          <mesh position={[node.width / 2, 0, 0]}>
+            <boxGeometry args={[0.1, 0.2, node.height]} />
+            <meshStandardMaterial color={fnColor} />
+          </mesh>
+
+          <mesh position={[-node.width / 2, 0, 0]}>
+            <boxGeometry args={[0.1, 0.2, node.height]} />
+            <meshStandardMaterial color={fnColor} />
           </mesh>
 
           <BBAnchor anchor={[-1, 0, -1]}>
-            <Center top right position={[0, 0.5, 0]}>
+            <Center top right position={[0, 0.2, -0.25]}>
               <Text3D font={monogram as any} height={0.5} size={1} castShadow>
                 <meshStandardMaterial color={solarized.blue} />
                 {node.name || ""}

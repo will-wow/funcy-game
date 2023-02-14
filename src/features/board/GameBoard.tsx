@@ -142,12 +142,10 @@ export function GameBoard() {
             {isVariableNode(node) && (
               <>
                 {node.outputs.map((output, i) => (
-                  <Connection
+                  <ConnectionToNode
                     key={`${output}-${i}`}
-                    startX={node.x}
-                    startY={node.y}
-                    endX={nodes[output].x}
-                    endY={nodes[output].y}
+                    startNode={node}
+                    endNode={nodes[output]}
                     color={solarized.green}
                   />
                 ))}

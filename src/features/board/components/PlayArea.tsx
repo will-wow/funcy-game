@@ -52,11 +52,6 @@ function PlayAreaComponent({ onHover, onClick, children }: PlayAreaProps) {
         <meshStandardMaterial color={solarized.base3} />
       </Cone>
 
-      <mesh castShadow position={[0, 0.5, 2]}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color={solarized.base3} />
-      </mesh>
-
       {children}
     </>
   );
