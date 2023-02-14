@@ -23,7 +23,7 @@ import {
 import { setInputOnNode, setOutputOnNode } from "../nodes/input-output";
 
 import { PlayArea } from "./components/PlayArea";
-import { Connection } from "./nodes/Connection";
+import { Connection, ConnectionToNode } from "./nodes/Connection";
 import { RenderNode } from "./nodes/RenderNode";
 
 export function GameBoard() {
@@ -131,11 +131,9 @@ export function GameBoard() {
             />
 
             {isExpressionNode(node) && node.output && (
-              <Connection
-                startX={node.x}
-                startY={node.y}
-                endX={nodes[node.output].x}
-                endY={nodes[node.output].y}
+              <ConnectionToNode
+                startNode={node}
+                endNode={nodes[node.output]}
                 color="#000fff"
               />
             )}
