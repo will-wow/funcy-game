@@ -9,6 +9,7 @@ import {
   isCalculatedNode,
   isFunctionNode,
 } from "$nodes/nodes";
+import { solarized } from "$utils/dracula";
 import monogram from "~/assets/monogram.json";
 
 export interface RenderNodeProps
@@ -25,17 +26,17 @@ export function RenderNode(props: RenderNodeProps) {
     case "FunctionDeclaration": {
       return (
         <group {...props} position={[x, 0, y]}>
-          <mesh>
+          <mesh receiveShadow>
             <boxGeometry args={[node.width, 0.1, node.height]} />
             <meshStandardMaterial
-              color={color === "#000fff" ? "gray" : color}
+              color={color === "#000fff" ? solarized.yellow : solarized.base0}
             />
           </mesh>
 
           <BBAnchor anchor={[-1, 0, -1]}>
             <Center top right position={[0, 0.5, 0]}>
-              <Text3D font={monogram as any} height={0.5} size={1}>
-                <meshStandardMaterial color={color} />
+              <Text3D font={monogram as any} height={0.5} size={1} castShadow>
+                <meshStandardMaterial color={solarized.blue} />
                 {node.name || ""}
               </Text3D>
             </Center>
@@ -44,36 +45,58 @@ export function RenderNode(props: RenderNodeProps) {
       );
     }
     case "CallExpression": {
-      return <TextNode value="()" {...props} />;
+      return <TextNode value="()" {...props} color={solarized.violet} />;
     }
     case "Identifier": {
-      return <RenderIdentifier {...props} node={node} />;
+      return <RenderIdentifier {...props} node={node} color={solarized.blue} />;
     }
     case "ElementAccessExpression": {
-      return <TextNode value="[]" {...props} />;
+      return <TextNode value="[]" {...props} color={solarized.blue} />;
     }
     case "Parameter": {
-      return <TextNode value={`(${node.name[0]})`} {...props} />;
+      return (
+        <TextNode
+          value={`(${node.name[0]})`}
+          {...props}
+          color={solarized.base0}
+        />
+      );
     }
     case "ReturnStatement": {
-      return <TextNode value="|>" {...props} />;
+      return <TextNode value="|>" {...props} color={solarized.green} />;
     }
     case "BinaryExpression": {
       return (
-        <TextNode value={ts.tokenToString(node.operator) || "?"} {...props} />
+        <TextNode
+          value={ts.tokenToString(node.operator) || "?"}
+          {...props}
+          color={solarized.base1}
+        />
       );
     }
     case "VariableStatement": {
-      return <TextNode value={node.name} {...props} />;
+      return <TextNode value={node.name} {...props} color={solarized.cyan} />;
     }
     case "ConditionalExpression": {
-      return <TextNode value="IF" {...props} />;
+      return <TextNode value="IF" {...props} color={solarized.green} />;
     }
     case "NumericLiteral": {
-      return <TextNode value={node.value.toString()} {...props} />;
+      return (
+        <TextNode
+          value={node.value.toString()}
+          {...props}
+          color={solarized.magenta}
+        />
+      );
     }
     case "StringLiteral": {
-      return <TextNode value={`"${node.value[0] || ""}"`} {...props} />;
+      return (
+        <TextNode
+          value={`"${node.value[0] || ""}"`}
+          {...props}
+          color={solarized.yellow}
+        />
+      );
     }
     default: {
       throw new Error("Unknown node kind");
@@ -90,13 +113,13 @@ function TextNode({ value, x, y, color, node, ...props }: TextNodeProps) {
   return (
     <group position={[x, 0, y]} {...props}>
       <Center top position={[0, 0.5, 0]}>
-        <Text3D font={monogram as any} height={0.5} size={1}>
+        <Text3D font={monogram as any} height={0.5} size={1} castShadow>
           <meshStandardMaterial color={color} />
           {value || ""}
         </Text3D>
       </Center>
       <Center top>
-        <mesh>
+        <mesh castShadow>
           <boxGeometry args={[1, 0.5, 1]} />
           <meshStandardMaterial color={color} />
         </mesh>
@@ -175,5 +198,3 @@ function RenderInput({ index, color }: RenderInputProps) {
     </group>
   );
 }
-
-// a2 = 1 / 2;

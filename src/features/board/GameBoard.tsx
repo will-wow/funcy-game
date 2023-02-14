@@ -19,6 +19,7 @@ import {
   isExpressionNode,
   isVariableNode,
 } from "$nodes/nodes";
+import { solarized } from "$utils/dracula";
 
 import { setInputOnNode, setOutputOnNode } from "../nodes/input-output";
 
@@ -134,7 +135,7 @@ export function GameBoard() {
               <ConnectionToNode
                 startNode={node}
                 endNode={nodes[node.output]}
-                color="#000fff"
+                color={solarized.green}
               />
             )}
 
@@ -147,7 +148,7 @@ export function GameBoard() {
                     startY={node.y}
                     endX={nodes[output].x}
                     endY={nodes[output].y}
-                    color="#000fff"
+                    color={solarized.green}
                   />
                 ))}
               </>

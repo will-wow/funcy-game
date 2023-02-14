@@ -6,6 +6,7 @@ import { Vector2 } from "three";
 
 import { setFocusPoint } from "$game/game.store";
 import { EULER_180_X } from "$three/rotations";
+import { solarized } from "$utils/dracula";
 
 export interface PlayAreaProps {
   onHover: (updateHover: (lastPoint: Vector2 | null) => Vector2 | null) => void;
@@ -46,9 +47,16 @@ function PlayAreaComponent({ onHover, onClick, children }: PlayAreaProps) {
           event.stopPropagation();
           setFocusPoint(event.point);
         }}
+        receiveShadow
       >
-        <meshStandardMaterial color="#949a49" />
+        <meshStandardMaterial color={solarized.base3} />
       </Cone>
+
+      <mesh castShadow position={[0, 0.5, 2]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color={solarized.base3} />
+      </mesh>
+
       {children}
     </>
   );

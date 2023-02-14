@@ -59,7 +59,7 @@ export function Game() {
           }
         }}
       >
-        <Canvas>
+        <Canvas shadows>
           <GameBoard />
 
           <Lighting />
