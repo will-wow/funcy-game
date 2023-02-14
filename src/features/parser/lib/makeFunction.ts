@@ -198,10 +198,22 @@ function parseNodeAndInputs(
     }
     case "ElementAccessExpression": {
       const [object, property] = node.inputs;
-      return ts.factory.createElementAccessExpression(
-        parseBranch(nodes, outputId, object, referenceCounts, inputTree),
-        parseBranch(nodes, outputId, property, referenceCounts, inputTree)
-      );
+
+      assert(!!property, "ElementAccessExpression does not have a property");
+
+      const propertyNode = nodes[property];
+
+      if (propertyNode.kind === "StringLiteral") {
+        return ts.factory.createPropertyAccessExpression(
+          parseBranch(nodes, outputId, object, referenceCounts, inputTree),
+          propertyNode.value
+        );
+      } else {
+        return ts.factory.createElementAccessExpression(
+          parseBranch(nodes, outputId, object, referenceCounts, inputTree),
+          parseBranch(nodes, outputId, property, referenceCounts, inputTree)
+        );
+      }
     }
     case "Identifier": {
       const [nodeId] = node.inputs;
