@@ -1,7 +1,9 @@
+/* eslint-disable no-console */
 import clsx from "clsx";
 import { ReactNode } from "react";
 
 import { GameMode, getNodes, setMode, useMode } from "$game/game.store";
+import { Level } from "$levels/Level";
 import { compileNodes } from "$parser/compile";
 import { CloseIcon } from "~/icons/CloseIcon";
 import { ConnectionIcon } from "~/icons/ConnectIcon";
@@ -10,10 +12,11 @@ import { SelectIcon } from "~/icons/SelectIcon";
 import { TerminalIcon } from "~/icons/TerminalIcon";
 
 export interface ModeSelectorProps {
+  level: Level;
   className?: string;
 }
 
-export function ModeSelector({ className }: ModeSelectorProps) {
+export function ModeSelector({ className, level }: ModeSelectorProps) {
   return (
     <div className={clsx(className, "flex flex-col gap-1 p-2")}>
       <SelectModeButton mode="place" icon={<PlusIcon />} />
@@ -31,8 +34,7 @@ export function ModeSelector({ className }: ModeSelectorProps) {
             // eslint-disable-next-line no-console
             console.log(nodes);
 
-            const { generatedCode, diagnostics } = await compileNodes(
-              "f",
+            const { generatedCode, diagnostics, js } = await compileNodes(
               nodes
             );
 
@@ -41,9 +43,46 @@ export function ModeSelector({ className }: ModeSelectorProps) {
                 generatedCode,
                 diagnostics.map((d) => d.getMessageText())
               );
+              return;
+            }
+            console.log("ts\n", generatedCode);
+            console.log("js\n", js);
+
+            const main = eval?.(`
+							${js}
+
+							${level.mainFunction};
+						`);
+
+            const results = level.tests.map(({ args, expect }) => {
+              const result = main(...args);
+              return {
+                args,
+                expect,
+                result,
+                pass: result === expect,
+              };
+            });
+
+            if (results.every((r) => r.pass)) {
+              console.log("tests passed");
             } else {
-              // eslint-disable-next-line no-console
-              console.log(generatedCode);
+              console.error("Tests failed!");
+
+              results.forEach((r) => {
+                if (r.pass) return;
+
+                console.error(
+                  "expected",
+                  `${level.mainFunction}(${r.args
+                    .map((arg) => JSON.stringify(arg))
+                    .join(", ")})`,
+                  "to return",
+                  r.expect,
+                  "but it returned",
+                  r.result
+                );
+              });
             }
           } catch (e) {
             console.error(e);

@@ -1,17 +1,12 @@
-import { Suspense } from "react";
-
-import { Game } from "$game/Game";
+import { Center } from "$elements/Center";
+import { Heading } from "$elements/Heading";
+import { LevelSelector } from "$levels/LevelSelector";
 
 export default async function GamePage() {
   return (
-    <Suspense
-      fallback={
-        <div>
-          <h1 className="text-5xl">Loading...</h1>
-        </div>
-      }
-    >
-      <Game />
-    </Suspense>
+    <Center className="h-screen">
+      <Heading as="h1">Select a level</Heading>
+      <LevelSelector />
+    </Center>
   );
 }

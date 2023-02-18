@@ -2,9 +2,11 @@
 
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
+import { useEffect } from "react";
 import { MOUSE } from "three";
 
 import { GameBoard } from "$board/GameBoard";
+import { LevelName, levels } from "$levels/levels";
 import { getEmptyNode } from "$nodes/empty-node";
 import { NINETY_DEGREES } from "$three/rotations";
 
@@ -13,6 +15,7 @@ import {
   getMode,
   getSelectedNode,
   resetNodes,
+  setLevel,
   setMode,
   setNodeToPlace,
   setSelectedNode,
@@ -24,9 +27,19 @@ import { ModeSelector } from "./ui/ModeSelector";
 import { NodeSelector } from "./ui/NodeSelector";
 import { Shortcuts } from "./ui/Shortcuts";
 
-export function Game() {
+export interface GameProps {
+  levelName: LevelName;
+}
+
+export function Game({ levelName }: GameProps) {
   const mode = useMode();
   const focusPoint = useFocusPoint();
+
+  const level = levels[levelName];
+
+  useEffect(() => {
+    setLevel(level);
+  }, [level]);
 
   return (
     <Shortcuts
@@ -85,7 +98,7 @@ export function Game() {
 
         <EditSelectedNode className="absolute top-0 left-0" />
 
-        <ModeSelector className="absolute bottom-0 left-0" />
+        <ModeSelector className="absolute bottom-0 left-0" level={level} />
       </div>
     </Shortcuts>
   );

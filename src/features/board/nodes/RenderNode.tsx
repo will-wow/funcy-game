@@ -245,12 +245,18 @@ function RenderFunctionDeclaration({
   x,
   y,
   color,
-  onClick: _,
+  onClick,
   ...rest
 }: RenderFunctionDeclarationProps) {
   const fnColor = color === "#000fff" ? solarized.yellow : solarized.base0;
   return (
-    <group {...rest} position={[x, 0, y]}>
+    <group
+      {...rest}
+      position={[x, 0, y]}
+      onClick={(e) => {
+        onClick?.(e, 0);
+      }}
+    >
       <mesh position={[0, 0, node.height / 2 - 0.05]}>
         <boxGeometry args={[node.width, 0.2, 0.1]} />
         <meshStandardMaterial color={fnColor} />
@@ -273,7 +279,15 @@ function RenderFunctionDeclaration({
 
       <BBAnchor anchor={[-1, 0, -1]}>
         <Center top right position={[0, 0.2, -0.25]}>
-          <Text3D font={monogram as any} height={0.5} size={1} castShadow>
+          <Text3D
+            font={monogram as any}
+            height={0.5}
+            size={1}
+            castShadow
+            onClick={(e) => {
+              onClick?.(e, 0);
+            }}
+          >
             <meshStandardMaterial color={solarized.blue} />
             {node.name || ""}
           </Text3D>

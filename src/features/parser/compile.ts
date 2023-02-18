@@ -17,10 +17,7 @@ const sourceFile = project.createSourceFile("file.ts");
 const printer = ts.createPrinter();
 
 /** Compile a set of nodes into a program. */
-export async function compileNodes(
-  functionName: string,
-  nodes: Record<string, GameNode>
-) {
+export async function compileNodes(nodes: Record<string, GameNode>) {
   const functions = Object.values(nodes).filter(isFunctionNode);
 
   const generatedCode = functions
@@ -45,5 +42,7 @@ export async function compileNodes(
       diagnostics.map((diag) => diag.getMessageText())
     );
   }
-  return { generatedCode, diagnostics };
+
+  const js = project.emitToMemory();
+  return { generatedCode, diagnostics, js: js.getFiles()[0].text };
 }

@@ -5,6 +5,15 @@ import { compileNodes } from "./compile";
 describe("generateSourceCode", () => {
   it("should generate simple source code", async () => {
     const nodes: Record<string, GameNode> = {
+      identity: {
+        name: "identity",
+        width: 16,
+        height: 8,
+        kind: "FunctionDeclaration",
+        id: "identity",
+        x: -1,
+        y: 0,
+      },
       p1: {
         kind: "Parameter",
         id: "p1",
@@ -24,15 +33,25 @@ describe("generateSourceCode", () => {
       },
     };
 
-    const { generatedCode, diagnostics } = await compileNodes("basic", nodes);
+    const { generatedCode, diagnostics, js } = await compileNodes(nodes);
 
     expect(diagnostics).toEqual([]);
     expect(generatedCode).toBe(
       [
         // Function
-        "function basic(p1: number): number {",
+        "function identity(p1: number) {",
         "    return p1;",
         "}",
+      ].join("\n")
+    );
+    expect(js).toBe(
+      [
+        // Function
+        '"use strict";',
+        "function identity(p1) {",
+        "    return p1;",
+        "}",
+        "",
       ].join("\n")
     );
   });

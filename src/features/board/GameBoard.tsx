@@ -21,6 +21,7 @@ import {
   GameNode,
   isCalculatedNode,
   isExpressionNode,
+  isFunctionNode,
   isVariableNode,
 } from "$nodes/nodes";
 import { solarized } from "$utils/dracula";
@@ -65,16 +66,19 @@ export function GameBoard() {
         />
       )}
 
-      {mode === "connect" && selectedNode && hoverPoint && (
-        <Connection
-          startX={selectedNode.x}
-          startZ={selectedNode.y}
-          endX={hoverPoint.x}
-          endY={hoverPoint.y}
-          endZ={hoverPoint.z}
-          color="#ffffff"
-        />
-      )}
+      {mode === "connect" &&
+        selectedNode &&
+        selectedNode.kind !== "FunctionDeclaration" &&
+        hoverPoint && (
+          <Connection
+            startX={selectedNode.x}
+            startZ={selectedNode.y}
+            endX={hoverPoint.x}
+            endY={hoverPoint.y}
+            endZ={hoverPoint.z}
+            color="#ffffff"
+          />
+        )}
 
       {Object.values(nodes).map((node) => {
         return (
@@ -186,6 +190,8 @@ function handleNodeClick(
           isCalculatedNode(node) &&
           (isExpressionNode(selectedNode) || isVariableNode(selectedNode))
         ) ||
+        // Can't connect from a function.
+        isFunctionNode(node) ||
         // Ignore clicks on the same node.
         selectedNode.id === node.id
       ) {
