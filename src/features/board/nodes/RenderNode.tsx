@@ -4,6 +4,7 @@ import { ts } from "ts-morph";
 
 import { useGetNode } from "$game/game.store";
 import {
+  FunctionDeclarationGameNode,
   GameNode,
   IdentifierGameNode,
   isCalculatedNode,
@@ -12,57 +13,23 @@ import {
 import { solarized } from "$utils/dracula";
 import monogram from "~/assets/monogram.json";
 
-type OnNodeHover = (
-  e: ThreeEvent<MouseEvent>,
-  hoveredInputIndex: number
-) => void;
+type OnNodeCallback = (e: ThreeEvent<MouseEvent>, inputIndex: number) => void;
 
 export interface RenderNodeProps
-  extends Omit<GroupProps, "position" | "rotation"> {
+  extends Omit<GroupProps, "position" | "rotation" | "onClick"> {
   node: GameNode;
   x: number;
   y: number;
   color?: string;
-  onHover?: OnNodeHover;
+  onClick?: OnNodeCallback;
+  onHover?: OnNodeCallback;
 }
 
 export function RenderNode(props: RenderNodeProps) {
-  const { x, y, color, node } = props;
+  const { node } = props;
   switch (node.kind) {
     case "FunctionDeclaration": {
-      const fnColor = color === "#000fff" ? solarized.yellow : solarized.base0;
-      return (
-        <group {...props} position={[x, 0, y]}>
-          <mesh position={[0, 0, node.height / 2 - 0.05]}>
-            <boxGeometry args={[node.width, 0.2, 0.1]} />
-            <meshStandardMaterial color={fnColor} />
-          </mesh>
-
-          <mesh position={[0, 0, -(node.height / 2 - 0.05)]}>
-            <boxGeometry args={[node.width, 0.2, 0.1]} />
-            <meshStandardMaterial color={fnColor} />
-          </mesh>
-
-          <mesh position={[node.width / 2, 0, 0]}>
-            <boxGeometry args={[0.1, 0.2, node.height]} />
-            <meshStandardMaterial color={fnColor} />
-          </mesh>
-
-          <mesh position={[-node.width / 2, 0, 0]}>
-            <boxGeometry args={[0.1, 0.2, node.height]} />
-            <meshStandardMaterial color={fnColor} />
-          </mesh>
-
-          <BBAnchor anchor={[-1, 0, -1]}>
-            <Center top right position={[0, 0.2, -0.25]}>
-              <Text3D font={monogram as any} height={0.5} size={1} castShadow>
-                <meshStandardMaterial color={solarized.blue} />
-                {node.name || ""}
-              </Text3D>
-            </Center>
-          </BBAnchor>
-        </group>
-      );
+      return <RenderFunctionDeclaration {...props} node={node} />;
     }
     case "CallExpression": {
       return <TextNode value="()" {...props} color={solarized.violet} />;
@@ -124,10 +91,11 @@ export function RenderNode(props: RenderNodeProps) {
   }
 }
 
-interface TextNodeProps extends CubeProps {
+interface TextNodeProps extends Omit<CubeProps, "onClick"> {
   value: string | number;
   node: GameNode;
-  onHover?: OnNodeHover;
+  onHover?: OnNodeCallback;
+  onClick?: OnNodeCallback;
 }
 
 function TextNode({
@@ -137,6 +105,7 @@ function TextNode({
   color,
   node,
   onHover = noop,
+  onClick = noop,
   ...props
 }: TextNodeProps) {
   return (
@@ -145,6 +114,9 @@ function TextNode({
         onPointerMove={stopPropagation}
         onPointerEnter={(e) => {
           onHover?.(e, 0);
+        }}
+        onClick={(e) => {
+          onClick?.(e, 0);
         }}
       >
         <Center top position={[0, 0.5, 0]}>
@@ -161,7 +133,12 @@ function TextNode({
         </Center>
       </mesh>
 
-      <RenderInputs node={node} color={color} onHover={onHover} />
+      <RenderInputs
+        node={node}
+        color={color}
+        onHover={onHover}
+        onClick={onClick}
+      />
     </group>
   );
 }
@@ -177,7 +154,7 @@ interface RenderIdentifierProps extends RenderNodeProps {
 }
 
 function RenderIdentifier(props: RenderIdentifierProps) {
-  const { node, color, onHover = noop } = props;
+  const { node, color, onHover = noop, onClick = noop } = props;
   const [functionNodeId] = node.inputs;
 
   const functionNode = useGetNode(functionNodeId);
@@ -191,7 +168,12 @@ function RenderIdentifier(props: RenderIdentifierProps) {
   return (
     <>
       <TextNode value={functionNode.name} {...props} />
-      <RenderInputs node={node} color={color} onHover={onHover} />
+      <RenderInputs
+        node={node}
+        color={color}
+        onHover={onHover}
+        onClick={onClick}
+      />
     </>
   );
 }
@@ -199,10 +181,11 @@ function RenderIdentifier(props: RenderIdentifierProps) {
 interface RenderInputsProps {
   node: GameNode;
   color?: string;
-  onHover: OnNodeHover;
+  onHover: OnNodeCallback;
+  onClick: OnNodeCallback;
 }
 
-function RenderInputs({ node, color, onHover }: RenderInputsProps) {
+function RenderInputs({ node, color, onHover, onClick }: RenderInputsProps) {
   if (!isCalculatedNode(node)) return null;
 
   return (
@@ -213,6 +196,7 @@ function RenderInputs({ node, color, onHover }: RenderInputsProps) {
           index={index + 1}
           color={color}
           onHover={onHover}
+          onClick={onClick}
         />
       ))}
     </>
@@ -222,10 +206,11 @@ function RenderInputs({ node, color, onHover }: RenderInputsProps) {
 interface RenderInputProps {
   index: number;
   color?: string;
-  onHover: OnNodeHover;
+  onHover: OnNodeCallback;
+  onClick: OnNodeCallback;
 }
 
-function RenderInput({ index, color, onHover }: RenderInputProps) {
+function RenderInput({ index, color, onHover, onClick }: RenderInputProps) {
   return (
     <group position={[0, index, 0]}>
       {/* Pole */}
@@ -240,10 +225,60 @@ function RenderInput({ index, color, onHover }: RenderInputProps) {
         onPointerEnter={(e) => {
           onHover(e, index + 1);
         }}
+        onClick={(e) => {
+          onClick(e, index);
+        }}
       >
         <sphereGeometry args={[0.2]} />
         <meshStandardMaterial color={color} />
       </mesh>
+    </group>
+  );
+}
+
+interface RenderFunctionDeclarationProps extends Omit<RenderNodeProps, "node"> {
+  node: FunctionDeclarationGameNode;
+}
+
+function RenderFunctionDeclaration({
+  node,
+  x,
+  y,
+  color,
+  onClick: _,
+  ...rest
+}: RenderFunctionDeclarationProps) {
+  const fnColor = color === "#000fff" ? solarized.yellow : solarized.base0;
+  return (
+    <group {...rest} position={[x, 0, y]}>
+      <mesh position={[0, 0, node.height / 2 - 0.05]}>
+        <boxGeometry args={[node.width, 0.2, 0.1]} />
+        <meshStandardMaterial color={fnColor} />
+      </mesh>
+
+      <mesh position={[0, 0, -(node.height / 2 - 0.05)]}>
+        <boxGeometry args={[node.width, 0.2, 0.1]} />
+        <meshStandardMaterial color={fnColor} />
+      </mesh>
+
+      <mesh position={[node.width / 2, 0, 0]}>
+        <boxGeometry args={[0.1, 0.2, node.height]} />
+        <meshStandardMaterial color={fnColor} />
+      </mesh>
+
+      <mesh position={[-node.width / 2, 0, 0]}>
+        <boxGeometry args={[0.1, 0.2, node.height]} />
+        <meshStandardMaterial color={fnColor} />
+      </mesh>
+
+      <BBAnchor anchor={[-1, 0, -1]}>
+        <Center top right position={[0, 0.2, -0.25]}>
+          <Text3D font={monogram as any} height={0.5} size={1} castShadow>
+            <meshStandardMaterial color={solarized.blue} />
+            {node.name || ""}
+          </Text3D>
+        </Center>
+      </BBAnchor>
     </group>
   );
 }

@@ -61,7 +61,7 @@ export function GameBoard() {
           node={nodeToPlace}
           color="#ffffff"
           x={hoverPoint.x}
-          y={hoverPoint.y}
+          y={hoverPoint.z}
         />
       )}
 
@@ -84,8 +84,15 @@ export function GameBoard() {
               color={selectedNode?.id === node.id ? "#400400" : "#000fff"}
               x={node.x}
               y={node.y}
-              onClick={(e) => {
-                handleNodeClick(e, node, nodeToPlace, selectedNode, mode);
+              onClick={(e, inputIndex) => {
+                handleNodeClick(
+                  e,
+                  node,
+                  inputIndex,
+                  nodeToPlace,
+                  selectedNode,
+                  mode
+                );
               }}
               onHover={(e, hoveredInputIndex) => {
                 handleNodeHover(
@@ -149,6 +156,7 @@ function handleNodeHover(
 function handleNodeClick(
   e: ThreeEvent<MouseEvent>,
   node: GameNode,
+  inputIndex: number,
   nodeToPlace: GameNode | null,
   selectedNode: GameNode | null,
   mode: GameMode
@@ -173,14 +181,17 @@ function handleNodeClick(
   } else if (mode === "connect") {
     if (selectedNode) {
       if (
+        // Ignore clicks on nodes that don't accept input.
         !(
           isCalculatedNode(node) &&
           (isExpressionNode(selectedNode) || isVariableNode(selectedNode))
-        )
+        ) ||
+        // Ignore clicks on the same node.
+        selectedNode.id === node.id
       ) {
         return;
       }
-      const nodeWithInput = setInputOnNode(node, selectedNode);
+      const nodeWithInput = setInputOnNode(node, selectedNode, inputIndex);
       const selectedNodeWithOutput = setOutputOnNode(selectedNode, node);
 
       updateNodes({

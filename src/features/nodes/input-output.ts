@@ -10,29 +10,25 @@ import {
   NodeId,
 } from "./nodes";
 
-function immutableTuplePush<T extends any[]>(tuple: T, value: T[number]): T {
+function immutableTupleSet<T extends any[]>(
+  tuple: T,
+  index: number,
+  value: T[number]
+): T {
   const result = [...tuple];
-  result.push(value);
+  result[index] = value;
 
-  let isNullFound = false;
-
-  return tuple.map((item) => {
-    if (isNullFound) return item;
-    if (item === null) {
-      isNullFound = true;
-      return value;
-    }
-    return item;
-  }) as T;
+  return result as T;
 }
 
 export function setInputOnNode<T extends BaseCalculatedGameNode>(
   node: T,
-  inputNode: GameNode
+  inputNode: GameNode,
+  inputIndex: number
 ): T {
   const inputs = isCallNode(node)
     ? [...node.inputs, inputNode.id]
-    : immutableTuplePush(node.inputs, inputNode.id);
+    : immutableTupleSet(node.inputs, inputIndex, inputNode.id);
   return { ...node, inputs };
 }
 
