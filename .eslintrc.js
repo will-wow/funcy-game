@@ -11,6 +11,7 @@ module.exports = {
     "import/internal-regex": "^(\\$|~/).+",
   },
   rules: {
+    "func-style": ["error", "declaration"],
     "import/order": [
       "error",
       {

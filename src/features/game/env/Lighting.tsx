@@ -49,7 +49,7 @@ export function Lighting() {
   );
 }
 
-const useCameraHelper = (enabled = false) => {
+function useCameraHelper(enabled = false) {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const cameraRef = useRef<OrthographicCamera>(null!);
 
@@ -63,4 +63,4 @@ const useCameraHelper = (enabled = false) => {
   useHelper(enabled && cameraRef, CameraHelper);
 
   return ref;
-};
+}

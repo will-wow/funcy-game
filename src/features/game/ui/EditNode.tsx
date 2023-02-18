@@ -23,9 +23,9 @@ export function EditSelectedNode({ className }: EditSelectedNodeProps) {
 
   if (!selectedNode) return null;
 
-  const handleChange = (partial: Partial<GameNode>) => {
-    updateSelectedNode(partial);
-  };
+  function handleChange(partial: Partial<GameNode>) {
+		updateSelectedNode(partial);
+	}
 
   return (
     <div className={className}>

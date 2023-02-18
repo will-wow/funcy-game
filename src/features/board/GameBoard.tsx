@@ -38,8 +38,6 @@ export function GameBoard() {
   const selectedNode = useSelectedNode();
   const nodes = useNodes();
 
-  console.log(hoverPoint);
-
   const handlePlayAreaClick = useCallback(
     ({ x, y }: Vector2) => {
       if (mode === "place" && nodeToPlace) {

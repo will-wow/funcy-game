@@ -415,34 +415,34 @@ if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
   window.gameStore = useGameStore;
 }
 
-export const useMode = () => {
+export function useMode() {
   return useGameStore((state) => state.mode);
-};
+}
 
-export const getMode = () => {
+export function getMode() {
   return useGameStore.getState().mode;
-};
+}
 
-export const setMode = (mode: GameStore["mode"]) => {
+export function setMode(mode: GameStore["mode"]) {
   const update: Partial<GameStore> = { mode };
   useGameStore.setState(update);
-};
+}
 
-export const useNodeToPlace = () => {
+export function useNodeToPlace() {
   return useGameStore((state) => state.nodeToPlace);
-};
+}
 
-export const setNodeToPlace = (node: GameNode | null) => {
+export function setNodeToPlace(node: GameNode | null) {
   useGameStore.setState({ nodeToPlace: node });
-};
+}
 
-export const getNodeToPlace = () => {
+export function getNodeToPlace() {
   return useGameStore.getState().nodeToPlace;
-};
+}
 
-export const resetNodes = () => {
+export function resetNodes() {
   useGameStore.setState({ nodes: DEFAULT_FUNCTION });
-};
+}
 
 export function useFocusPoint() {
   return useGameStore((state) => state.focusPoint || new Vector3());
@@ -452,13 +452,13 @@ export function setFocusPoint(focusPoint: Vector3 | null) {
   useGameStore.setState({ focusPoint });
 }
 
-export const useSelectedNode = () => {
+export function useSelectedNode() {
   return useGameStore((state) => {
     if (!state.selectedNode) return null;
 
     return state.nodes[state.selectedNode];
   });
-};
+}
 
 export function updateSelectedNode<T extends GameNode>(update: Partial<T>) {
   const { nodes } = useGameStore.getState();
@@ -476,24 +476,24 @@ export function updateSelectedNode<T extends GameNode>(update: Partial<T>) {
   });
 }
 
-export const getSelectedNode = () => {
+export function getSelectedNode() {
   const state = useGameStore.getState();
   if (!state.selectedNode) return null;
 
   return state.nodes[state.selectedNode];
-};
+}
 
-export const setSelectedNode = (id: string | null) => {
+export function setSelectedNode(id: string | null) {
   useGameStore.setState({ selectedNode: id });
-};
+}
 
-export const useNodes = () => {
+export function useNodes() {
   return useGameStore((state) => state.nodes);
-};
+}
 
-export const getNodes = () => {
+export function getNodes() {
   return useGameStore.getState().nodes;
-};
+}
 
 export function useNodesOfType<T extends GameNode>(kind: T["kind"]): T[] {
   const nodes = useGameStore((state) => state.nodes);
@@ -502,35 +502,35 @@ export function useNodesOfType<T extends GameNode>(kind: T["kind"]): T[] {
   }, [kind, nodes]);
 }
 
-export const useGetNode = (nodeId: NullableNodeId) => {
+export function useGetNode(nodeId: NullableNodeId) {
   return useGameStore((state) => {
     if (!nodeId) return null;
     return state.nodes[nodeId] || null;
   });
-};
+}
 
-export const useNodesList = () => {
+export function useNodesList() {
   const nodes = useGameStore((state) => state.nodes);
   return useMemo(() => Object.values(nodes), [nodes]);
-};
+}
 
-export const removeNode = (id: string) => {
+export function removeNode(id: string) {
   const { nodes } = useGameStore.getState();
 
   useGameStore.setState({
     nodes: removeNodeFromNodes(nodes, id),
   });
-};
+}
 
-export const removeConnection = (id: string, inputIndex: number) => {
+export function removeConnection(id: string, inputIndex: number) {
   const { nodes } = useGameStore.getState();
 
   useGameStore.setState({
     nodes: removeConnectionFromNodes(nodes, nodes[id], inputIndex),
   });
-};
+}
 
-export const setNode = (node: GameNode) => {
+export function setNode(node: GameNode) {
   const nodes = useGameStore.getState().nodes;
   useGameStore.setState({
     nodes: {
@@ -538,9 +538,9 @@ export const setNode = (node: GameNode) => {
       [node.id]: node,
     },
   });
-};
+}
 
-export const updateNodes = (newNodes: Record<string, GameNode>) => {
+export function updateNodes(newNodes: Record<string, GameNode>) {
   const nodes = useGameStore.getState().nodes;
   useGameStore.setState({
     nodes: {
@@ -548,4 +548,4 @@ export const updateNodes = (newNodes: Record<string, GameNode>) => {
       ...newNodes,
     },
   });
-};
+}
