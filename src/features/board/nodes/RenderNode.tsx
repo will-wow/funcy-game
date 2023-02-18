@@ -1,5 +1,5 @@
 import { BBAnchor, Center, Text3D } from "@react-three/drei";
-import { GroupProps } from "@react-three/fiber";
+import { GroupProps, ThreeEvent } from "@react-three/fiber";
 import { ts } from "ts-morph";
 
 import { useGetNode } from "$game/game.store";
@@ -12,12 +12,18 @@ import {
 import { solarized } from "$utils/dracula";
 import monogram from "~/assets/monogram.json";
 
+type OnNodeHover = (
+  e: ThreeEvent<MouseEvent>,
+  hoveredInputIndex: number
+) => void;
+
 export interface RenderNodeProps
   extends Omit<GroupProps, "position" | "rotation"> {
   node: GameNode;
   x: number;
   y: number;
   color?: string;
+  onHover?: OnNodeHover;
 }
 
 export function RenderNode(props: RenderNodeProps) {
@@ -121,25 +127,41 @@ export function RenderNode(props: RenderNodeProps) {
 interface TextNodeProps extends CubeProps {
   value: string | number;
   node: GameNode;
+  onHover?: OnNodeHover;
 }
 
-function TextNode({ value, x, y, color, node, ...props }: TextNodeProps) {
+function TextNode({
+  value,
+  x,
+  y,
+  color,
+  node,
+  onHover = noop,
+  ...props
+}: TextNodeProps) {
   return (
     <group position={[x, 0, y]} {...props}>
-      <Center top position={[0, 0.5, 0]}>
-        <Text3D font={monogram as any} height={0.5} size={1} castShadow>
-          <meshStandardMaterial color={color} />
-          {value || ""}
-        </Text3D>
-      </Center>
-      <Center top>
-        <mesh castShadow>
-          <boxGeometry args={[1, 0.5, 1]} />
-          <meshStandardMaterial color={color} />
-        </mesh>
-      </Center>
+      <mesh
+        onPointerMove={stopPropagation}
+        onPointerEnter={(e) => {
+          onHover?.(e, 0);
+        }}
+      >
+        <Center top position={[0, 0.5, 0]}>
+          <Text3D font={monogram as any} height={0.5} size={1} castShadow>
+            <meshStandardMaterial color={color} />
+            {value || ""}
+          </Text3D>
+        </Center>
+        <Center top>
+          <mesh castShadow>
+            <boxGeometry args={[1, 0.5, 1]} />
+            <meshStandardMaterial color={color} />
+          </mesh>
+        </Center>
+      </mesh>
 
-      <RenderInputs node={node} color={color} />
+      <RenderInputs node={node} color={color} onHover={onHover} />
     </group>
   );
 }
@@ -155,7 +177,7 @@ interface RenderIdentifierProps extends RenderNodeProps {
 }
 
 function RenderIdentifier(props: RenderIdentifierProps) {
-  const { node, color } = props;
+  const { node, color, onHover = noop } = props;
   const [functionNodeId] = node.inputs;
 
   const functionNode = useGetNode(functionNodeId);
@@ -169,7 +191,30 @@ function RenderIdentifier(props: RenderIdentifierProps) {
   return (
     <>
       <TextNode value={functionNode.name} {...props} />
-      <RenderInputs node={node} color={color} />
+      <RenderInputs node={node} color={color} onHover={onHover} />
+    </>
+  );
+}
+
+interface RenderInputsProps {
+  node: GameNode;
+  color?: string;
+  onHover: OnNodeHover;
+}
+
+function RenderInputs({ node, color, onHover }: RenderInputsProps) {
+  if (!isCalculatedNode(node)) return null;
+
+  return (
+    <>
+      {new Array(node.inputs.length - 1).fill(0).map((_, index) => (
+        <RenderInput
+          key={index}
+          index={index + 1}
+          color={color}
+          onHover={onHover}
+        />
+      ))}
     </>
   );
 }
@@ -177,26 +222,10 @@ function RenderIdentifier(props: RenderIdentifierProps) {
 interface RenderInputProps {
   index: number;
   color?: string;
+  onHover: OnNodeHover;
 }
 
-interface RenderInputsProps {
-  node: GameNode;
-  color?: string;
-}
-
-function RenderInputs({ node, color }: RenderInputsProps) {
-  if (!isCalculatedNode(node)) return null;
-
-  return (
-    <>
-      {new Array(node.inputs.length - 1).fill(0).map((_, index) => (
-        <RenderInput key={index} index={index + 1} color={color} />
-      ))}
-    </>
-  );
-}
-
-function RenderInput({ index, color }: RenderInputProps) {
+function RenderInput({ index, color, onHover }: RenderInputProps) {
   return (
     <group position={[0, index, 0]}>
       {/* Pole */}
@@ -205,10 +234,22 @@ function RenderInput({ index, color }: RenderInputProps) {
         <meshStandardMaterial color={color} />
       </mesh>
       {/* Connector */}
-      <mesh position={[0, 1, 0]}>
+      <mesh
+        position={[0, 1, 0]}
+        onPointerMove={stopPropagation}
+        onPointerEnter={(e) => {
+          onHover(e, index + 1);
+        }}
+      >
         <sphereGeometry args={[0.2]} />
         <meshStandardMaterial color={color} />
       </mesh>
     </group>
   );
 }
+
+function stopPropagation(e: ThreeEvent<any>) {
+  e.stopPropagation();
+}
+
+function noop() {}

@@ -396,7 +396,11 @@ const useGameStore = create(
     }),
     {
       name: "gameStore",
-      enabled: process.env.NODE_ENV === "development",
+      enabled:
+        // Only in dev mode
+        process.env.NODE_ENV === "development" &&
+        // Not in SSR
+        typeof window !== "undefined",
     }
   )
 );

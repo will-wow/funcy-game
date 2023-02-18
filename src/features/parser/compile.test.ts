@@ -13,6 +13,7 @@ describe("generateSourceCode", () => {
         outputs: ["return"],
         x: 0,
         y: 0,
+        array: false,
       },
       return: {
         kind: "ReturnStatement",

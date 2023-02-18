@@ -25,10 +25,10 @@ export function ConnectionToNode({
   return (
     <Connection
       startX={startNode.x}
-      startY={startNode.y}
+      startZ={startNode.y}
       endX={endNode.x}
-      endY={endNode.y}
-      endZ={endZ}
+      endY={endZ}
+      endZ={endNode.y}
       color={color}
       onClick={onClick}
     />
@@ -37,10 +37,10 @@ export function ConnectionToNode({
 
 export interface ConnectionProps {
   startX: number;
-  startY: number;
+  startZ: number;
   endX: number;
-  endY: number;
-  endZ?: number;
+  endZ: number;
+  endY?: number;
   color: string;
   inputIndex?: number;
   onClick?: () => void;
@@ -48,39 +48,39 @@ export interface ConnectionProps {
 
 export function Connection({
   startX,
-  startY,
+  startZ,
   endX,
-  endY,
-  endZ = 0.25,
+  endY = 0.25,
+  endZ,
   color,
   onClick,
 }: ConnectionProps) {
   const minX = Math.min(startX, endX);
-  const minY = Math.min(startY, endY);
+  const minY = Math.min(startZ, endZ);
   const maxX = Math.max(startX, endX);
-  const maxY = Math.max(startY, endY);
+  const maxY = Math.max(startZ, endZ);
 
   const xLength = maxX - minX;
-  const yLength = maxY - minY;
+  const zLength = maxY - minY;
 
   const xDirection = startX < endX ? 1 : -1;
-  const yDirection = startY > endY ? 1 : -1;
+  const zDirection = startZ > endZ ? 1 : -1;
 
   // Angle in radians to rotate the line
-  const angle = Math.atan2(yLength * yDirection, xLength * xDirection);
+  const angle = Math.atan2(zLength * zDirection, xLength * xDirection);
 
-  const startPoint = new Vector3(startX, 0.25, startY);
-  const endPoint = new Vector3(endX, endZ, endY);
+  const startPoint = new Vector3(startX, 0.25, startZ);
+  const endPoint = new Vector3(endX, endY, endZ);
 
   const length = startPoint.distanceTo(endPoint);
 
   return (
     <group
-      position={[(startX + endX) / 2, (0.25 + endZ) / 2, (startY + endY) / 2]}
-      rotation={[0, angle, endZ ? Math.asin((endZ - 0.25) / length) : 0]}
+      position={[(startX + endX) / 2, (0.25 + endY) / 2, (startZ + endZ) / 2]}
+      rotation={[0, angle, endY ? Math.asin((endY - 0.25) / length) : 0]}
     >
       <mesh rotation={[NINETY_DEGREES, 0, NINETY_DEGREES]} onClick={onClick}>
-        <cylinderGeometry args={[0.1, 0.1, length]} />
+        <cylinderGeometry args={[0.1, 0.02, length]} />
         <meshStandardMaterial color={color} />
       </mesh>
     </group>

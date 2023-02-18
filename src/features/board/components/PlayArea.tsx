@@ -2,14 +2,14 @@ import { Cone } from "@react-three/drei";
 import { ThreeEvent } from "@react-three/fiber";
 import { useCallback } from "react";
 import React from "react";
-import { Vector2 } from "three";
+import { Vector2, Vector3 } from "three";
 
 import { setFocusPoint } from "$game/game.store";
 import { EULER_180_X } from "$three/rotations";
 import { solarized } from "$utils/dracula";
 
 export interface PlayAreaProps {
-  onHover: (updateHover: (lastPoint: Vector2 | null) => Vector2 | null) => void;
+  onHover: (updateHover: (lastPoint: Vector3 | null) => Vector3 | null) => void;
   onClick: (point: Vector2) => void;
   children: React.ReactNode;
 }
@@ -19,12 +19,12 @@ function PlayAreaComponent({ onHover, onClick, children }: PlayAreaProps) {
   const handleHover = useCallback(
     (event: ThreeEvent<PointerEvent>) => {
       const x = Math.round(event.point.x);
-      const y = Math.round(event.point.z);
+      const z = Math.round(event.point.z);
       onHover((lastPoint) => {
-        if (lastPoint && lastPoint.x === x && lastPoint.y === y) {
-          return lastPoint;
-        }
-        return new Vector2(x, y);
+        const newPoint = new Vector3(x, 0, z);
+        // Don't cause unnecessary renders.
+        if (lastPoint?.equals(newPoint)) return lastPoint;
+        return newPoint;
       });
     },
     [onHover]

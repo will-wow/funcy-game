@@ -1,9 +1,11 @@
 "use client";
 
+import { ThreeEvent } from "@react-three/fiber";
 import { Fragment, useCallback, useState } from "react";
-import { Vector2 } from "three";
+import { Vector2, Vector3 } from "three";
 
 import {
+  GameMode,
   removeConnection,
   removeNode,
   setNode,
@@ -16,6 +18,7 @@ import {
 } from "$game/game.store";
 import { generateNodeId } from "$nodes/empty-node";
 import {
+  GameNode,
   isCalculatedNode,
   isExpressionNode,
   isVariableNode,
@@ -29,11 +32,13 @@ import { Connection, ConnectionToNode } from "./nodes/Connection";
 import { RenderNode } from "./nodes/RenderNode";
 
 export function GameBoard() {
-  const [hoverPoint, setHoverPoint] = useState<Vector2 | null>(null);
+  const [hoverPoint, setHoverPoint] = useState<Vector3 | null>(null);
   const mode = useMode();
   const nodeToPlace = useNodeToPlace();
   const selectedNode = useSelectedNode();
   const nodes = useNodes();
+
+  console.log(hoverPoint);
 
   const handlePlayAreaClick = useCallback(
     ({ x, y }: Vector2) => {
@@ -65,9 +70,10 @@ export function GameBoard() {
       {mode === "connect" && selectedNode && hoverPoint && (
         <Connection
           startX={selectedNode.x}
-          startY={selectedNode.y}
+          startZ={selectedNode.y}
           endX={hoverPoint.x}
           endY={hoverPoint.y}
+          endZ={hoverPoint.z}
           color="#ffffff"
         />
       )}
@@ -81,69 +87,40 @@ export function GameBoard() {
               x={node.x}
               y={node.y}
               onClick={(e) => {
-                e.stopPropagation();
-
-                if (
-                  mode === "place" &&
-                  node.kind === "FunctionDeclaration" &&
-                  nodeToPlace
-                ) {
-                  const x = Math.round(e.point.x);
-                  const y = Math.round(e.point.z);
-                  const id = generateNodeId();
-                  setNode({
-                    ...nodeToPlace,
-                    x,
-                    y,
-                    id,
-                  });
-                  setSelectedNode(id);
-                } else if (mode === "select") {
-                  setSelectedNode(node.id);
-                } else if (mode === "remove") {
-                  removeNode(node.id);
-                } else if (mode === "connect") {
-                  if (selectedNode) {
-                    if (
-                      !(
-                        isCalculatedNode(node) &&
-                        (isExpressionNode(selectedNode) ||
-                          isVariableNode(selectedNode))
-                      )
-                    ) {
-                      return;
-                    }
-                    const nodeWithInput = setInputOnNode(node, selectedNode);
-                    const selectedNodeWithOutput = setOutputOnNode(
-                      selectedNode,
-                      node
-                    );
-
-                    updateNodes({
-                      [node.id]: nodeWithInput,
-                      [selectedNode.id]: selectedNodeWithOutput,
-                    });
-
-                    setSelectedNode(null);
-                  } else {
-                    setSelectedNode(node.id);
-                  }
-                }
+                handleNodeClick(e, node, nodeToPlace, selectedNode, mode);
+              }}
+              onHover={(e, hoveredInputIndex) => {
+                handleNodeHover(
+                  e,
+                  mode,
+                  node,
+                  hoveredInputIndex,
+                  setHoverPoint
+                );
               }}
             />
 
             {isCalculatedNode(node) && (
               <>
-                {node.inputs.map((inputId, i) => {
-                  if (!inputId) return null;
+                {node.inputs.map((inputId, inputIndex) => {
+                  // Don't render a connection from identifiers to their functions.
+                  if (!inputId || node.kind === "Identifier") return null;
                   return (
                     <ConnectionToNode
-                      key={`${node.id}-${i}`}
+                      key={`${node.id}-${inputIndex}`}
                       startNode={nodes[inputId]}
                       endNode={node}
                       color={solarized.green}
                       onClick={() => {
-                        removeConnection(node.id, i);
+                        // eslint-disable-next-line no-console
+                        console.log("clicked connection", {
+                          receivingNode: node,
+                          outputtingNode: nodes[inputId],
+                          inputIndex,
+                        });
+                        if (mode === "remove") {
+                          removeConnection(node.id, inputIndex);
+                        }
                       }}
                     />
                   );
@@ -155,4 +132,67 @@ export function GameBoard() {
       })}
     </PlayArea>
   );
+}
+
+function handleNodeHover(
+  e: ThreeEvent<MouseEvent>,
+  mode: GameMode,
+  hoveredNode: GameNode,
+  hoveredInputIndex: number,
+  setHoverPoint: (point: Vector3 | null) => void
+) {
+  e.stopPropagation();
+
+  if (mode !== "connect") return;
+
+  setHoverPoint(new Vector3(hoveredNode.x, hoveredInputIndex, hoveredNode.y));
+}
+
+function handleNodeClick(
+  e: ThreeEvent<MouseEvent>,
+  node: GameNode,
+  nodeToPlace: GameNode | null,
+  selectedNode: GameNode | null,
+  mode: GameMode
+) {
+  e.stopPropagation();
+
+  if (mode === "place" && node.kind === "FunctionDeclaration" && nodeToPlace) {
+    const x = Math.round(e.point.x);
+    const y = Math.round(e.point.z);
+    const id = generateNodeId();
+    setNode({
+      ...nodeToPlace,
+      x,
+      y,
+      id,
+    });
+    setSelectedNode(id);
+  } else if (mode === "select") {
+    setSelectedNode(node.id);
+  } else if (mode === "remove") {
+    removeNode(node.id);
+  } else if (mode === "connect") {
+    if (selectedNode) {
+      if (
+        !(
+          isCalculatedNode(node) &&
+          (isExpressionNode(selectedNode) || isVariableNode(selectedNode))
+        )
+      ) {
+        return;
+      }
+      const nodeWithInput = setInputOnNode(node, selectedNode);
+      const selectedNodeWithOutput = setOutputOnNode(selectedNode, node);
+
+      updateNodes({
+        [node.id]: nodeWithInput,
+        [selectedNode.id]: selectedNodeWithOutput,
+      });
+
+      setSelectedNode(null);
+    } else {
+      setSelectedNode(node.id);
+    }
+  }
 }
