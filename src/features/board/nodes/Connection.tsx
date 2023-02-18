@@ -7,12 +7,14 @@ interface ConnectionToNodeProps {
   startNode: GameNode;
   endNode: GameNode;
   color: string;
+  onClick?: () => void;
 }
 
 export function ConnectionToNode({
   startNode,
   endNode,
   color,
+  onClick,
 }: ConnectionToNodeProps) {
   const indexOfInput = isCalculatedNode(endNode)
     ? endNode.inputs.indexOf(startNode.id)
@@ -28,6 +30,7 @@ export function ConnectionToNode({
       endY={endNode.y}
       endZ={endZ}
       color={color}
+      onClick={onClick}
     />
   );
 }
@@ -40,6 +43,7 @@ export interface ConnectionProps {
   endZ?: number;
   color: string;
   inputIndex?: number;
+  onClick?: () => void;
 }
 
 export function Connection({
@@ -49,6 +53,7 @@ export function Connection({
   endY,
   endZ = 0.25,
   color,
+  onClick,
 }: ConnectionProps) {
   const minX = Math.min(startX, endX);
   const minY = Math.min(startY, endY);
@@ -74,7 +79,7 @@ export function Connection({
       position={[(startX + endX) / 2, (0.25 + endZ) / 2, (startY + endY) / 2]}
       rotation={[0, angle, endZ ? Math.asin((endZ - 0.25) / length) : 0]}
     >
-      <mesh rotation={[NINETY_DEGREES, 0, NINETY_DEGREES]}>
+      <mesh rotation={[NINETY_DEGREES, 0, NINETY_DEGREES]} onClick={onClick}>
         <cylinderGeometry args={[0.1, 0.1, length]} />
         <meshStandardMaterial color={color} />
       </mesh>

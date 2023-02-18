@@ -1,4 +1,4 @@
-import { BBAnchor, Center, Edges, Text3D } from "@react-three/drei";
+import { BBAnchor, Center, Text3D } from "@react-three/drei";
 import { GroupProps } from "@react-three/fiber";
 import { ts } from "ts-morph";
 

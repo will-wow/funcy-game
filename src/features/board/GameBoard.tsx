@@ -4,6 +4,7 @@ import { Fragment, useCallback, useState } from "react";
 import { Vector2 } from "three";
 
 import {
+  removeConnection,
   removeNode,
   setNode,
   setSelectedNode,
@@ -131,24 +132,22 @@ export function GameBoard() {
               }}
             />
 
-            {isExpressionNode(node) && node.output && (
-              <ConnectionToNode
-                startNode={node}
-                endNode={nodes[node.output]}
-                color={solarized.green}
-              />
-            )}
-
-            {isVariableNode(node) && (
+            {isCalculatedNode(node) && (
               <>
-                {node.outputs.map((output, i) => (
-                  <ConnectionToNode
-                    key={`${output}-${i}`}
-                    startNode={node}
-                    endNode={nodes[output]}
-                    color={solarized.green}
-                  />
-                ))}
+                {node.inputs.map((inputId, i) => {
+                  if (!inputId) return null;
+                  return (
+                    <ConnectionToNode
+                      key={`${node.id}-${i}`}
+                      startNode={nodes[inputId]}
+                      endNode={node}
+                      color={solarized.green}
+                      onClick={() => {
+                        removeConnection(node.id, i);
+                      }}
+                    />
+                  );
+                })}
               </>
             )}
           </Fragment>

@@ -4,12 +4,10 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
 import {
-  GameNode,
-  isCalculatedNode,
-  isExpressionNode,
-  NodeId,
-  NullableNodeId,
-} from "$nodes/nodes";
+  removeConnectionFromNodes,
+  removeNodeFromNodes,
+} from "$nodes/game-notes";
+import { GameNode, NullableNodeId } from "$nodes/nodes";
 
 export type GameMode = "select" | "place" | "connect" | "remove";
 
@@ -513,47 +511,18 @@ export const useNodesList = () => {
 };
 
 export const removeNode = (id: string) => {
-  const nodes = { ...useGameStore.getState().nodes };
+  const { nodes } = useGameStore.getState();
 
-  const nodeToDelete = nodes[id];
-
-  if (!nodeToDelete) return;
-
-  const updates: Record<NodeId, GameNode> = {};
-
-  // TODO: Clean this up and handle variables.
-  if (isExpressionNode(nodeToDelete) && nodeToDelete.output) {
-    const outputNode = nodes[nodeToDelete.output];
-
-    if (isCalculatedNode(outputNode)) {
-      updates[outputNode.id] = {
-        ...outputNode,
-        inputs: outputNode.inputs.map((inputId) =>
-          inputId === id ? null : inputId
-        ) as any,
-      };
-    }
-  }
-  if (isCalculatedNode(nodeToDelete)) {
-    nodeToDelete.inputs.forEach((inputId) => {
-      if (inputId) {
-        const inputNode = nodes[inputId];
-        if (isExpressionNode(inputNode)) {
-          updates[inputNode.id] = {
-            ...inputNode,
-            output: null,
-          };
-        }
-      }
-    });
-  }
-
-  delete nodes[id];
   useGameStore.setState({
-    nodes: {
-      ...nodes,
-      ...updates,
-    },
+    nodes: removeNodeFromNodes(nodes, id),
+  });
+};
+
+export const removeConnection = (id: string, inputIndex: number) => {
+  const { nodes } = useGameStore.getState();
+
+  useGameStore.setState({
+    nodes: removeConnectionFromNodes(nodes, nodes[id], inputIndex),
   });
 };
 
