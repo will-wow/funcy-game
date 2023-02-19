@@ -329,14 +329,7 @@ export function makeFunction(
   const functionName = ts.factory.createIdentifier(functionNode.name);
 
   const nodesInFunction = getNodesInFunction(nodes, functionNode);
-  const nodeList = Object.values(nodesInFunction);
   const params = getParamsForFunction(nodesInFunction);
-
-  const firstExpression = nodeList.find((node) => node.kind !== "Parameter");
-
-  if (!firstExpression) {
-    throw new Error("No first expression");
-  }
 
   const parameters = Object.values(params).map((param) => {
     const name = ts.factory.createIdentifier(param.name);
