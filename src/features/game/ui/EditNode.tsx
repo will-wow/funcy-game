@@ -24,8 +24,8 @@ export function EditSelectedNode({ className }: EditSelectedNodeProps) {
   if (!selectedNode) return null;
 
   function handleChange(partial: Partial<GameNode>) {
-		updateSelectedNode(partial);
-	}
+    updateSelectedNode(partial);
+  }
 
   return (
     <div className={className}>
@@ -188,6 +188,41 @@ function EditNode({ node, onChange }: EditNodeProps) {
             ))}
           </select>
         </label>
+      );
+    }
+    case "ReturnStatement": {
+      return (
+        <>
+          <label>
+            Type
+            <select
+              value={node.type}
+              onChange={(e) =>
+                onChange({
+                  ...node,
+                  type: e.target.value as
+                    | "infer"
+                    | "number"
+                    | "boolean"
+                    | "string",
+                })
+              }
+            >
+              <option value="infer">Infer</option>
+              <option value="number">Number</option>
+              <option value="string">String</option>
+              <option value="boolean">Boolean</option>
+            </select>
+          </label>
+          <label>
+            Array
+            <input
+              type="checkbox"
+              checked={node.array}
+              onChange={(e) => onChange({ ...node, array: e.target.checked })}
+            />
+          </label>
+        </>
       );
     }
     default: {

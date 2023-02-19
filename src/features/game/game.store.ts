@@ -7,7 +7,7 @@ import { Level } from "$levels/Level";
 import {
   removeConnectionFromNodes,
   removeNodeFromNodes,
-} from "$nodes/game-notes";
+} from "$nodes/game-nodes";
 import { GameNode, GameNodes, NullableNodeId } from "$nodes/nodes";
 
 export type GameMode = "select" | "place" | "connect" | "remove";

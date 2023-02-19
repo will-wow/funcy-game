@@ -1,18 +1,19 @@
 /* eslint-disable no-console */
 import { ts } from "ts-morph";
 
+import { getNodesInFunction, getParamsForFunction } from "$nodes/functions";
 import {
   GameNode,
   NodeId,
   NullableNodeId,
-  ParameterGameNode,
   VariableGameNode,
   isCalculatedNode,
   isExpressionNode,
-  getNodesInFunction,
   FunctionDeclarationGameNode,
   assertNodeIsKind,
   GameNodes,
+  ReturnStatementGameNode,
+  isTypedNode,
 } from "$nodes/nodes";
 import { assert } from "$utils/utils";
 
@@ -51,12 +52,12 @@ function usedReferences(
   return usedReferenceId;
 }
 
-function parse(nodesInFunction: GameNodes, nodes: GameNodes): ts.Statement[] {
+function parse(
+  nodesInFunction: GameNodes,
+  nodes: GameNodes,
+  returnNode: ReturnStatementGameNode
+): ts.Statement[] {
   const referenceCounts = countReferences(nodesInFunction);
-  const returnNode = Object.values(nodesInFunction).find(
-    (node) => node.kind === "ReturnStatement"
-  );
-  assert(returnNode, "No return node found");
   const returnExpression = parseNodeAndOutputs(
     nodes,
     returnNode,
@@ -75,10 +76,7 @@ function parse(nodesInFunction: GameNodes, nodes: GameNodes): ts.Statement[] {
     const usedReferenceId = usedReferences(nodes, referenceCounts);
     const node = nodes[usedReferenceId] as VariableGameNode;
 
-    const typeKind = getKeywordType(node.type);
-    const typeKeyword = typeKind
-      ? ts.factory.createKeywordTypeNode(typeKind)
-      : undefined;
+    const type = getTypeOfNode(node);
 
     const [inputId] = node.inputs;
     assert(inputId, "Variable node has no input");
@@ -91,7 +89,7 @@ function parse(nodesInFunction: GameNodes, nodes: GameNodes): ts.Statement[] {
             ts.factory.createVariableDeclaration(
               node.name,
               undefined,
-              typeKeyword,
+              type,
               parseNodeAndInputs(nodes, nodes[inputId], referenceCounts)
             ),
           ],
@@ -218,8 +216,10 @@ function parseNodeAndInputs(
     case "Identifier": {
       const [nodeId] = node.inputs;
       assert(nodeId, "Identifier does not have an input");
-      const inputNode = nodes[nodeId] as FunctionDeclarationGameNode;
-      assertNodeIsKind(inputNode, ["FunctionDeclaration"]);
+      const inputNode = nodes[nodeId];
+      assertNodeIsKind<FunctionDeclarationGameNode>(inputNode, [
+        "FunctionDeclaration",
+      ]);
       return ts.factory.createIdentifier(inputNode.name);
     }
     case "CallExpression": {
@@ -286,10 +286,10 @@ function parseNodeAndInputs(
 
 function getKeywordType(
   type: "infer" | "string" | "number" | "boolean"
-): ts.KeywordTypeSyntaxKind | null {
+): ts.KeywordTypeSyntaxKind | undefined {
   switch (type) {
     case "infer":
-      return null;
+      return undefined;
     case "string":
       return ts.SyntaxKind.StringKeyword;
     case "number":
@@ -301,6 +301,17 @@ function getKeywordType(
   }
 }
 
+function getTypeOfNode(node: GameNode): ts.TypeNode | undefined {
+  assert(isTypedNode(node), "Node is not typed");
+
+  const typeKind = getKeywordType(node.type);
+  if (!typeKind) {
+    throw new Error(`Unknown type ${node.type} for ${node.id}`);
+  }
+  const baseType = ts.factory.createKeywordTypeNode(typeKind);
+  return node.array ? ts.factory.createArrayTypeNode(baseType) : baseType;
+}
+
 /** Generate the AST for a function from nodes */
 export function makeFunction(
   functionNode: FunctionDeclarationGameNode,
@@ -310,9 +321,7 @@ export function makeFunction(
 
   const nodesInFunction = getNodesInFunction(nodes, functionNode);
   const nodeList = Object.values(nodesInFunction);
-  const params = nodeList.filter(
-    (node) => node.kind === "Parameter"
-  ) as ParameterGameNode[];
+  const params = getParamsForFunction(nodesInFunction);
 
   const firstExpression = nodeList.find((node) => node.kind !== "Parameter");
 
@@ -322,14 +331,7 @@ export function makeFunction(
 
   const parameters = Object.values(params).map((param) => {
     const name = ts.factory.createIdentifier(param.name);
-    const typeKind = getKeywordType(param.type);
-    if (!typeKind) {
-      throw new Error(`Unknown type ${param.type} for ${param.name}`);
-    }
-    const baseType = ts.factory.createKeywordTypeNode(typeKind);
-    const type = param.array
-      ? ts.factory.createArrayTypeNode(baseType)
-      : baseType;
+    const type = getTypeOfNode(param) || undefined;
 
     return ts.factory.createParameterDeclaration(
       undefined,
@@ -341,7 +343,13 @@ export function makeFunction(
     );
   });
 
-  const statements = parse(nodesInFunction, nodes);
+  const returnNode = Object.values(nodesInFunction).find(
+    (node) => node.kind === "ReturnStatement"
+  );
+  assertNodeIsKind<ReturnStatementGameNode>(returnNode, ["ReturnStatement"]);
+  const statements = parse(nodesInFunction, nodes, returnNode);
+
+  const returnType = getTypeOfNode(returnNode);
 
   return ts.factory.createFunctionDeclaration(
     undefined,
@@ -349,8 +357,7 @@ export function makeFunction(
     functionName,
     undefined,
     parameters,
-    // ts.factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
-    undefined,
+    returnType,
     ts.factory.createBlock(statements, true)
   );
 }

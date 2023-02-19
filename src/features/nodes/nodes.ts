@@ -19,6 +19,18 @@ export interface BaseGameNode {
   y: number;
 }
 
+type RequiredNodeType = "number" | "string" | "boolean";
+type NodeType = "infer" | RequiredNodeType;
+
+export interface TypedGameNode {
+  type: NodeType;
+  array: boolean;
+}
+
+export interface RequiredTypedGameNode extends TypedGameNode {
+  type: RequiredNodeType;
+}
+
 /** Variables and parameters, that can have multiple outputs */
 export interface BaseVariableGameNode extends BaseGameNode {
   /** List of nodes this variable is used in. */
@@ -46,18 +58,18 @@ export interface FunctionDeclarationGameNode extends BaseGameNode {
 }
 
 /** A function parameter, with many outputs. */
-export interface ParameterGameNode extends BaseVariableGameNode {
+export interface ParameterGameNode
+  extends BaseVariableGameNode,
+    RequiredTypedGameNode {
   kind: "Parameter";
   name: string;
-  type: "number" | "string" | "boolean";
   array: boolean;
 }
 
 /** A variable, with one input and many outputs. */
-export interface VariableGameNode extends BaseVariableGameNode {
+export interface VariableGameNode extends BaseVariableGameNode, TypedGameNode {
   kind: "VariableStatement";
   name: string;
-  type: "infer" | "number" | "string" | "boolean";
   array: boolean;
   inputs: [NullableNodeId];
 }
@@ -75,7 +87,7 @@ export interface IdentifierGameNode extends BaseExpressionGameNode {
 }
 
 /** The return statement, which has no output. */
-export interface ReturnStatementGameNode extends BaseGameNode {
+export interface ReturnStatementGameNode extends BaseGameNode, TypedGameNode {
   kind: "ReturnStatement";
   inputs: [NullableNodeId];
 }
@@ -143,48 +155,25 @@ export function isCallNode(node: any): node is CallExpressionGameNode {
   return node.kind === "CallExpression";
 }
 
+export function isTypedNode(node: any): node is TypedGameNode {
+  return "type" in node;
+}
+
 export function isFunctionNode(
   node: GameNode
 ): node is FunctionDeclarationGameNode {
   return node.kind === "FunctionDeclaration";
 }
 
-export function getNodesInFunction(
-  nodes: GameNodes,
-  fn: FunctionDeclarationGameNode
-): GameNodes {
-  const nodesInFunction: GameNodes = {};
-
-  for (const nodeId in nodes) {
-    const node = nodes[nodeId];
-    if (isNodeInsideFunction(node, fn)) {
-      nodesInFunction[nodeId] = node;
-    }
-  }
-
-  return nodesInFunction;
-}
-
-export function isNodeInsideFunction(
-  node: GameNode,
-  fn: FunctionDeclarationGameNode
-) {
-  if (node.kind === "FunctionDeclaration") return false;
-
-  const { x, y, width, height } = fn;
-
-  return (
-    node.x >= x - width / 2 &&
-    node.x <= x + width / 2 &&
-    node.y >= y - height / 2 &&
-    node.y <= y + height / 2
-  );
-}
-
 export function assertNodeIsKind<T extends GameNode>(
-  node: T,
+  node: GameNode | undefined,
   kind: T["kind"][]
 ): asserts node is T {
+  if (!node) {
+    throw new Error(
+      `Expected node to be of kind ${kind.join(", ")}, but it was undefined`
+    );
+  }
   if (!kind.includes(node.kind)) {
     throw new Error(
       `Expected node to be of kind ${kind.join(", ")}, but it was ${node.kind}`

@@ -27,6 +27,7 @@ module.exports = {
         "newlines-between": "always",
       },
     ],
+    "prefer-const": ["error", { destructuring: "all" }],
     "import/prefer-default-export": "off",
     "no-plusplus": "off",
     "jsx-a11y/label-has-associated-control": ["error", { assert: "either" }],

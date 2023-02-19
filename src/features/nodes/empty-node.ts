@@ -93,6 +93,8 @@ export function getEmptyNode<T extends GameNode>(
         id,
         x,
         y,
+        type: "infer",
+        array: false,
       };
     }
     case "StringLiteral": {

@@ -1,12 +1,10 @@
 import { ts } from "ts-morph";
 
-import { useGetNode } from "$game/game.store";
-import { IdentifierGameNode, isFunctionNode } from "$nodes/nodes";
 import { solarized } from "$utils/dracula";
-import { noop } from "$utils/utils";
 
+import { RenderCallExpression } from "./node-type/RenderCallExpression";
 import { RenderFunctionDeclaration } from "./node-type/RenderFunctionDeclaration";
-import { RenderInputs } from "./node-type/RenderInputs";
+import { RenderIdentifier } from "./node-type/RenderIdentifier";
 import { RenderNodeProps } from "./node-type/RenderNodeProps";
 import { TextNode } from "./node-type/RenderTextNode";
 
@@ -17,7 +15,9 @@ export function RenderNode(props: RenderNodeProps) {
       return <RenderFunctionDeclaration {...props} node={node} />;
     }
     case "CallExpression": {
-      return <TextNode value="()" {...props} color={solarized.violet} />;
+      return (
+        <RenderCallExpression {...props} color={solarized.violet} node={node} />
+      );
     }
     case "Identifier": {
       return <RenderIdentifier {...props} node={node} color={solarized.blue} />;
@@ -74,29 +74,4 @@ export function RenderNode(props: RenderNodeProps) {
       throw new Error("Unknown node kind");
     }
   }
-}
-
-function RenderIdentifier(props: RenderNodeProps<IdentifierGameNode>) {
-  const { node, color, onHover = noop, onClick = noop } = props;
-  const [functionNodeId] = node.inputs;
-
-  const functionNode = useGetNode(functionNodeId);
-
-  if (!functionNode) return <TextNode value="?" {...props} />;
-
-  if (!isFunctionNode(functionNode)) {
-    throw new Error("Expected function node to be a function declaration.");
-  }
-
-  return (
-    <>
-      <TextNode value={functionNode.name} {...props} />
-      <RenderInputs
-        node={node}
-        color={color}
-        onHover={onHover}
-        onClick={onClick}
-      />
-    </>
-  );
 }

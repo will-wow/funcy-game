@@ -1,5 +1,7 @@
 import { GroupProps, ThreeEvent } from "@react-three/fiber";
 
+import { GameNode } from "$nodes/nodes";
+
 export type OnNodeCallback = (
   e: ThreeEvent<MouseEvent>,
   inputIndex: number

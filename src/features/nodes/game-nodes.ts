@@ -1,9 +1,11 @@
+import { getNodesInFunction } from "./functions";
 import { removeOutput, removeInput, removeInputAtIndex } from "./input-output";
 import {
   GameNode,
   GameNodes,
   isCalculatedNode,
   isExpressionNode,
+  isFunctionNode,
   isVariableNode,
   NodeId,
 } from "./nodes";
@@ -22,7 +24,8 @@ export function removeNodeFromNodes(
   nodeId: NodeId
 ): GameNodes {
   // Remove the node from the list.
-  const { [nodeId]: node, ...updatedNodes } = nodes;
+  const { [nodeId]: node } = nodes;
+  let { [nodeId]: _deletedNode, ...updatedNodes } = nodes;
 
   if (!node) return nodes;
 
@@ -46,6 +49,14 @@ export function removeNodeFromNodes(
     if (node.output) {
       const outputNode = updatedNodes[node.output];
       updatedNodes[node.output] = removeInput(outputNode, node.id);
+    }
+  }
+
+  if (isFunctionNode(node)) {
+    const nodesInFunction = getNodesInFunction(nodes, node);
+
+    for (nodeId in nodesInFunction) {
+      updatedNodes = removeNodeFromNodes(updatedNodes, nodeId);
     }
   }
 
