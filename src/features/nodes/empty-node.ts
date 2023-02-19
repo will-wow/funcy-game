@@ -25,6 +25,7 @@ export function getEmptyNode<T extends GameNode>(
         y,
       };
     }
+    case "NewExpression":
     case "CallExpression": {
       return {
         inputs: [],
@@ -135,6 +136,15 @@ export function getEmptyNode<T extends GameNode>(
       return {
         output: null,
         inputs: [null, null, null],
+        kind,
+        id,
+        x,
+        y,
+      };
+    }
+    case "GlobalThis": {
+      return {
+        output: null,
         kind,
         id,
         x,

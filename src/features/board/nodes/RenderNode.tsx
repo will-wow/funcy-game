@@ -14,13 +14,17 @@ export function RenderNode(props: RenderNodeProps) {
     case "FunctionDeclaration": {
       return <RenderFunctionDeclaration {...props} node={node} />;
     }
-    case "CallExpression": {
+    case "CallExpression":
+    case "NewExpression": {
       return (
         <RenderCallExpression {...props} color={solarized.violet} node={node} />
       );
     }
     case "Identifier": {
       return <RenderIdentifier {...props} node={node} color={solarized.blue} />;
+    }
+    case "GlobalThis": {
+      return <TextNode value="G" {...props} color={solarized.base0} />;
     }
     case "ElementAccessExpression": {
       return <TextNode value="[]" {...props} color={solarized.blue} />;

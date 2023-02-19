@@ -222,11 +222,17 @@ function parseNodeAndInputs(
       ]);
       return ts.factory.createIdentifier(inputNode.name);
     }
-    case "CallExpression": {
+    case "CallExpression":
+    case "NewExpression": {
       const [functionNodeId, ...args] = node.inputs;
       assert(functionNodeId, "CallExpression does not have a function");
 
-      return ts.factory.createCallExpression(
+      const creator =
+        node.kind === "CallExpression"
+          ? ts.factory.createCallExpression
+          : ts.factory.createNewExpression;
+
+      return creator(
         parseBranch(
           nodes,
           outputId,
@@ -278,6 +284,9 @@ function parseNodeAndInputs(
       assert(input, "Return statement has no input");
       return parseNodeAndInputs(nodes, nodes[input], referenceCounts);
     }
+    case "GlobalThis": {
+      return ts.factory.createIdentifier("globalThis");
+    }
     default: {
       throw new Error(`Unknown node kind, ${node.kind}`);
     }
@@ -306,7 +315,7 @@ function getTypeOfNode(node: GameNode): ts.TypeNode | undefined {
 
   const typeKind = getKeywordType(node.type);
   if (!typeKind) {
-    throw new Error(`Unknown type ${node.type} for ${node.id}`);
+    return undefined;
   }
   const baseType = ts.factory.createKeywordTypeNode(typeKind);
   return node.array ? ts.factory.createArrayTypeNode(baseType) : baseType;

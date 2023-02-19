@@ -26,6 +26,16 @@ export function NodeSelector() {
       />
       <NodeSelectorButton
         selectedValue={value}
+        value="NewExpression"
+        label="New"
+      />
+      <NodeSelectorButton
+        selectedValue={value}
+        value="GlobalThis"
+        label="Global"
+      />
+      <NodeSelectorButton
+        selectedValue={value}
         value="Identifier"
         label="Identifier"
       />

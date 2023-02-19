@@ -27,6 +27,8 @@ describe("generateSourceCode", () => {
       return: {
         kind: "ReturnStatement",
         id: "return",
+        type: "number",
+        array: false,
         inputs: ["p1"],
         x: 0,
         y: 0,

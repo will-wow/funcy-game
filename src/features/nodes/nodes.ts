@@ -2,7 +2,8 @@ import { ts } from "ts-morph";
 
 export type NodeId = string;
 
-export type SyntaxKindName = keyof typeof ts.SyntaxKind;
+export type NonSyntaxNames = "GlobalThis";
+export type SyntaxKindName = keyof typeof ts.SyntaxKind | NonSyntaxNames;
 
 export type NullableNodeId = NodeId | null;
 
@@ -67,7 +68,10 @@ export interface ParameterGameNode
 }
 
 /** A variable, with one input and many outputs. */
-export interface VariableGameNode extends BaseVariableGameNode, TypedGameNode {
+export interface VariableGameNode
+  extends BaseVariableGameNode,
+    TypedGameNode,
+    BaseCalculatedGameNode {
   kind: "VariableStatement";
   name: string;
   array: boolean;
@@ -75,30 +79,44 @@ export interface VariableGameNode extends BaseVariableGameNode, TypedGameNode {
 }
 
 export interface ElementAccessExpressionGameNode
-  extends BaseExpressionGameNode {
+  extends BaseExpressionGameNode,
+    BaseCalculatedGameNode {
   kind: "ElementAccessExpression";
   inputs: [object: NullableNodeId, key: NullableNodeId];
 }
 
 /** A reference to an external function/value */
-export interface IdentifierGameNode extends BaseExpressionGameNode {
+export interface IdentifierGameNode
+  extends BaseExpressionGameNode,
+    BaseCalculatedGameNode {
   kind: "Identifier";
   inputs: [NullableNodeId];
 }
 
+export interface GlobalThisGameNode extends BaseExpressionGameNode {
+  kind: "GlobalThis";
+}
+
 /** The return statement, which has no output. */
-export interface ReturnStatementGameNode extends BaseGameNode, TypedGameNode {
+export interface ReturnStatementGameNode
+  extends BaseGameNode,
+    TypedGameNode,
+    BaseCalculatedGameNode {
   kind: "ReturnStatement";
   inputs: [NullableNodeId];
 }
 
-export interface BinaryExpressionGameNode extends BaseExpressionGameNode {
+export interface BinaryExpressionGameNode
+  extends BaseExpressionGameNode,
+    BaseCalculatedGameNode {
   kind: "BinaryExpression";
   operator: ts.BinaryOperator;
   inputs: [left: NullableNodeId, right: NullableNodeId];
 }
 
-export interface ConditionalExpressionGameNode extends BaseExpressionGameNode {
+export interface ConditionalExpressionGameNode
+  extends BaseExpressionGameNode,
+    BaseCalculatedGameNode {
   kind: "ConditionalExpression";
   inputs: [
     condition: NullableNodeId,
@@ -117,8 +135,18 @@ export interface StringLiteralGameNode extends BaseExpressionGameNode {
   value: string;
 }
 
-export interface CallExpressionGameNode extends BaseExpressionGameNode {
+export interface CallExpressionGameNode
+  extends BaseExpressionGameNode,
+    BaseCalculatedGameNode {
   kind: "CallExpression";
+  /** params */
+  inputs: NullableNodeId[];
+}
+
+export interface NewExpressionGameNode
+  extends BaseExpressionGameNode,
+    BaseCalculatedGameNode {
+  kind: "NewExpression";
   /** params */
   inputs: NullableNodeId[];
 }
@@ -127,6 +155,7 @@ export type GameNode =
   | FunctionDeclarationGameNode
   | BinaryExpressionGameNode
   | CallExpressionGameNode
+  | NewExpressionGameNode
   | ConditionalExpressionGameNode
   | NumericLiteralGameNode
   | ParameterGameNode
@@ -135,6 +164,7 @@ export type GameNode =
   | StringLiteralGameNode
   | VariableGameNode
   | ElementAccessExpressionGameNode
+  | GlobalThisGameNode
   | IdentifierGameNode;
 
 export type NodeKind = GameNode["kind"];

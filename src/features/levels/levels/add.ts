@@ -46,6 +46,8 @@ export const add: Level<[number, number], number> = {
       inputs: [null],
       kind: "ReturnStatement",
       id: "3157f7db-2e75-473e-9109-c6fa076ff164",
+      type: "infer",
+      array: false,
       x: 6,
       y: -1,
     },

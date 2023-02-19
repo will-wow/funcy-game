@@ -298,5 +298,6 @@ export const fibN: Level<[fibNumber: number], number> = {
     { args: [5], expect: 5 },
     { args: [6], expect: 8 },
     { args: [7], expect: 13 },
+    { args: [50], expect: 12586269025 },
   ],
 };

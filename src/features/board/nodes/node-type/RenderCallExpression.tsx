@@ -6,6 +6,7 @@ import {
   CallExpressionGameNode,
   FunctionDeclarationGameNode,
   isFunctionNode,
+  NewExpressionGameNode,
 } from "$nodes/nodes";
 import { noop } from "$utils/utils";
 
@@ -17,7 +18,7 @@ export function RenderCallExpression({
   x,
   y,
   ...props
-}: RenderNodeProps<CallExpressionGameNode>) {
+}: RenderNodeProps<CallExpressionGameNode | NewExpressionGameNode>) {
   const { node, color, onHover = noop, onClick = noop } = props;
   const [identifierNodeId] = node.inputs;
 
@@ -26,9 +27,11 @@ export function RenderCallExpression({
     identifierNode?.kind === "Identifier" ? identifierNode.inputs[0] : null
   );
 
+  const display = node.kind === "CallExpression" ? "()" : "new";
+
   return (
     <group position={[x, 0, y]}>
-      <TextNode x={0} y={0} value="()" {...props} />;
+      <TextNode x={0} y={0} value={display} {...props} />;
       {functionNode && isFunctionNode(functionNode) && (
         <RenderFunctionInputs
           functionNode={functionNode}
