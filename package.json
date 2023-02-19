@@ -17,10 +17,8 @@
   },
   "dependencies": {
     "@next/font": "13.1.6",
-    "@react-three/drei": "^9.56.21",
-    "@react-three/fiber": "^8.10.1",
-    "@react-three/flex": "^1.0.1",
-    "@ts-morph/bootstrap": "^0.18.0",
+    "@react-three/drei": "^9.56.25",
+    "@react-three/fiber": "^8.11.2",
     "clsx": "^1.2.1",
     "next": "13.1.6",
     "react": "18.2.0",

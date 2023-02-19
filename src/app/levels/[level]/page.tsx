@@ -17,7 +17,7 @@ export default async function GamePage({
   return (
     <Suspense
       fallback={
-        <Center>
+        <Center className="h-screen">
           <Heading as="h1" size="lg">
             Loading...
           </Heading>
