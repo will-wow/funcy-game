@@ -31,7 +31,7 @@ export function RenderCallExpression({
 
   return (
     <group position={[x, 0, y]}>
-      <TextNode x={0} y={0} value={display} {...props} />;
+      <TextNode x={0} y={0} value={display} {...props} />
       {functionNode && isFunctionNode(functionNode) && (
         <RenderFunctionInputs
           functionNode={functionNode}
