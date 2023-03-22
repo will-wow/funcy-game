@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { ts } from "ts-morph";
+import { addSyntheticLeadingComment } from "typescript";
 
 import { getNodesInFunction, getParamsForFunction } from "$nodes/functions";
 import {
@@ -188,11 +189,11 @@ function parseNodeAndInputs(
   const outputId = node.id;
   switch (node.kind) {
     case "Parameter": {
-      return ts.factory.createIdentifier(node.name);
+      return tag(node, ts.factory.createIdentifier(node.name));
     }
     case "VariableStatement": {
       noteReference(node.id, referenceCounts);
-      return ts.factory.createIdentifier(node.name);
+      return tag(node, ts.factory.createIdentifier(node.name));
     }
     case "ElementAccessExpression": {
       const [object, property] = node.inputs;
@@ -220,7 +221,7 @@ function parseNodeAndInputs(
       assertNodeIsKind<FunctionDeclarationGameNode>(inputNode, [
         "FunctionDeclaration",
       ]);
-      return ts.factory.createIdentifier(inputNode.name);
+      return tag(inputNode, ts.factory.createIdentifier(inputNode.name));
     }
     case "CallExpression":
     case "NewExpression": {
@@ -274,10 +275,10 @@ function parseNodeAndInputs(
       );
     }
     case "NumericLiteral": {
-      return ts.factory.createNumericLiteral(node.value);
+      return tag(node, ts.factory.createNumericLiteral(node.value));
     }
     case "StringLiteral": {
-      return ts.factory.createStringLiteral(node.value);
+      return tag(node, ts.factory.createStringLiteral(node.value));
     }
     case "ReturnStatement": {
       const [input] = node.inputs;
@@ -285,7 +286,7 @@ function parseNodeAndInputs(
       return parseNodeAndInputs(nodes, nodes[input], referenceCounts);
     }
     case "GlobalThis": {
-      return ts.factory.createIdentifier("globalThis");
+      return tag(node, ts.factory.createIdentifier("globalThis"));
     }
     default: {
       throw new Error(`Unknown node kind, ${node.kind}`);
@@ -332,7 +333,7 @@ export function makeFunction(
   const params = getParamsForFunction(nodesInFunction);
 
   const parameters = Object.values(params).map((param) => {
-    const name = ts.factory.createIdentifier(param.name);
+    const name = tag(param, ts.factory.createIdentifier(param.name));
     const type = getTypeOfNode(param) || undefined;
 
     return ts.factory.createParameterDeclaration(
@@ -361,5 +362,19 @@ export function makeFunction(
     parameters,
     returnType,
     ts.factory.createBlock(statements, true)
+  );
+}
+
+const TAGS_ON = true;
+
+function tag<T extends ts.Node>(gameNode: GameNode, node: T): T {
+  if (!TAGS_ON) {
+    return node;
+  }
+  return addSyntheticLeadingComment(
+    node,
+    ts.SyntaxKind.MultiLineCommentTrivia,
+    `@${gameNode.id}`,
+    false
   );
 }
