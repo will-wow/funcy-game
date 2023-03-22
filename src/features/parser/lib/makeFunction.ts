@@ -66,7 +66,9 @@ function parse(
   );
 
   const statements: ts.Statement[] = [
-    ts.factory.createReturnStatement(returnExpression),
+    ts.factory.createReturnStatement(
+      ts.factory.createParenthesizedExpression(returnExpression)
+    ),
   ];
 
   while (true) {
@@ -260,7 +262,9 @@ function parseNodeAndInputs(
       } = node;
       return ts.factory.createBinaryExpression(
         parseBranch(nodes, outputId, left, referenceCounts, inputTree),
-        operator,
+        // TODO: this isn't emitting
+        // Apparently because the pos isn't set https://github.com/Microsoft/TypeScript/blob/main/src/compiler/emitter.ts#L3255
+        tag(node, ts.factory.createToken(operator as any)),
         parseBranch(nodes, outputId, right, referenceCounts, inputTree)
       );
     }
@@ -373,8 +377,8 @@ function tag<T extends ts.Node>(gameNode: GameNode, node: T): T {
   }
   return addSyntheticLeadingComment(
     node,
-    ts.SyntaxKind.MultiLineCommentTrivia,
+    ts.SyntaxKind.SingleLineCommentTrivia,
     `@${gameNode.id}`,
-    false
+    true
   );
 }

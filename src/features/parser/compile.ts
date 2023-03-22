@@ -1,4 +1,4 @@
-import { Project, ts, Node } from "ts-morph";
+import { Project, ts } from "ts-morph";
 
 import { GameNode, isFunctionNode } from "$nodes/nodes";
 
@@ -20,19 +20,20 @@ const printer = ts.createPrinter();
 export async function compileNodes(nodes: Record<string, GameNode>) {
   const functions = Object.values(nodes).filter(isFunctionNode);
 
-  const generatedCode = functions
-    .map((fn) => {
-      const functionDeclaration = makeFunction(fn, nodes);
+  const functionStatements = functions.map((fn) => makeFunction(fn, nodes));
 
+  const generatedCode = functionStatements
+    .map((node) => {
       return printer.printNode(
         ts.EmitHint.Unspecified,
-        functionDeclaration,
+        node,
         sourceFile.compilerNode
       );
     })
     .join("\n\n");
 
   sourceFile.replaceWithText(generatedCode);
+  // sourceFile.formatText();
   const sourceText = sourceFile.getFullText();
 
   const diagnostics = project.getPreEmitDiagnostics();
@@ -51,6 +52,8 @@ export async function compileNodes(nodes: Record<string, GameNode>) {
 
       const errorContents = sourceText.slice(start, start + length);
 
+      // const firstNode = sourceFile.getDescendantAtPos(start);
+
       const contentsTagsMatches = [...errorContents.matchAll(tagCommentRegex)];
       const contentsTags = contentsTagsMatches.map((match) => match[1]);
 
@@ -66,12 +69,6 @@ export async function compileNodes(nodes: Record<string, GameNode>) {
 
   const js = project.emitToMemory();
   return { generatedCode, diagnostics, js: js.getFiles()[0].text };
-}
-
-function getNodeAtPosition(node: Node<ts.Node>, pos: number): Node<ts.Node> {
-  const child = node.getChildAtPos(pos);
-
-  return child && child.getPos() !== pos ? getNodeAtPosition(child, pos) : node;
 }
 
 const leadingTagCommentRegex = /\/\*@([-a-z0-9]+)\*\/ $/;
